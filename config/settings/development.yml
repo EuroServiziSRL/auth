@@ -1,4 +1,3 @@
-dominio: "ciccio"
 url_auth_hub: 'http://localhost:3001/auth_hub/'
 path_pkey_es: '/home/fabiano/soluzionipa/certs/soluzionipa.key'
 hash_gestori_spid: 

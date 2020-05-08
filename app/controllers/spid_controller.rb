@@ -47,32 +47,37 @@ class SpidController < ApplicationController
             #arriva id dell'ente, chiamo servizio di auth_hub che mi restituisce i dati del cliente
             #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
             hash_dati_cliente = dati_cliente_da_token 
-            #preparo i parametri per avere i setting per fare la chiamata
-            params_per_settings = params_per_settings(hash_dati_cliente)
-            saml_settings = get_saml_settings(params_per_settings)
+            if hash_dati_cliente['esito'] == 'ok'
+                #preparo i parametri per avere i setting per fare la chiamata
+                params_per_settings = params_per_settings(hash_dati_cliente)
+                saml_settings = get_saml_settings(params_per_settings)
+                
+                #create an instance of Spid::Saml::Authrequest
+                request = Spid::Saml::Authrequest.new(saml_settings)
+                auth_request = request.create
             
-            #create an instance of Spid::Saml::Authrequest
-            request = Spid::Saml::Authrequest.new(saml_settings)
-            auth_request = request.create
-        
-            #stampo la request se metto il log level debug
-            #logger.debug "\n REQUEST #{auth_request.request} \n"
+                #stampo la request se metto il log level debug
+                #logger.debug "\n REQUEST #{auth_request.request} \n"
 
-            meta = Spid::Saml::Metadata.new(saml_settings)
-            #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
-            pkey = hash_dati_cliente['aggregato'] ? nil : params_per_settings["private_key_path"]
-            signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",pkey)
-            sso_request = meta.create_sso_request( auth_request.request, {  :RelayState   => request.uuid,
-                                                                            :SigAlg       => "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
-                                                                            :Signature    => signature } )
+                meta = Spid::Saml::Metadata.new(saml_settings)
+                #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
+                pkey = hash_dati_cliente['aggregato'] ? nil : params_per_settings["private_key_path"]
+                signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",pkey)
+                sso_request = meta.create_sso_request( auth_request.request, {  :RelayState   => request.uuid,
+                                                                                :SigAlg       => "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+                                                                                :Signature    => signature } )
 
-            #Creo oggetto da ritornare con info per traciatura e url per fare redirect
-            resp = {}
-            resp['esito'] = 'ok'
-            resp['b64_request_comp'] = Base64.strict_encode64(Zlib::Deflate.deflate(auth_request.request))
-            resp['uuid'] = auth_request.uuid
-            resp['issue_instant'] = auth_request.issue_instant
-            resp['sso_request'] = sso_request
+                #Creo oggetto da ritornare con info per traciatura e url per fare redirect
+                resp = {}
+                resp['esito'] = 'ok'
+                resp['b64_request_comp'] = Base64.strict_encode64(Zlib::Deflate.deflate(auth_request.request))
+                resp['uuid'] = auth_request.uuid
+                resp['issue_instant'] = auth_request.issue_instant
+                resp['sso_request'] = sso_request
+            else
+                #se esito non ok, ripasso direttamente l'hash con l'errore
+                resp = hash_dati_cliente
+            end    
         rescue => exception
             logger.error exception.message
             logger.error exception.backtrace.join("\n") 
@@ -90,151 +95,155 @@ class SpidController < ApplicationController
         begin
             #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
             hash_dati_cliente = dati_cliente_da_token
-            #preparo i params per creare i settings
-            params_per_settings = params_per_settings(hash_dati_cliente)
-            settings = get_saml_settings(params_per_settings)
-            saml_response = request_params[:assertion]
-            #creo un oggetto response
-            response = Spid::Saml::Response.new(saml_response)
-            if response.assertion_present?
-                #ricevo issue istant
-                issue_instant_req = request_params[:issue_instant]
-                unless issue_instant_req.blank? #in fase di test si deve fare la login ogni volta per gli issue istant
-                    issue_instant_req_datetime = DateTime.strptime(issue_instant_req, "%Y-%m-%dT%H:%M:%SZ")
-                    issue_instant_resp = response.issue_instant
-                    begin
-                        issue_instant_resp_datetime = DateTime.strptime(issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%SZ")
-                    rescue => exc
-                        #provo a fare strptime con millisecondi
+            if hash_dati_cliente['esito'] == 'ok'
+                #preparo i params per creare i settings
+                params_per_settings = params_per_settings(hash_dati_cliente)
+                settings = get_saml_settings(params_per_settings)
+                saml_response = request_params[:assertion]
+                #creo un oggetto response
+                response = Spid::Saml::Response.new(saml_response)
+                if response.assertion_present?
+                    #ricevo issue istant
+                    issue_instant_req = request_params[:issue_instant]
+                    unless issue_instant_req.blank? #in fase di test si deve fare la login ogni volta per gli issue istant
+                        issue_instant_req_datetime = DateTime.strptime(issue_instant_req, "%Y-%m-%dT%H:%M:%SZ")
+                        issue_instant_resp = response.issue_instant
                         begin
-                            issue_instant_resp_datetime = DateTime.strptime(issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
-                        rescue => exc2
-                            errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' issue istant anche con millisecondi" #caso 110
+                            issue_instant_resp_datetime = DateTime.strptime(issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%SZ")
+                        rescue => exc
+                            #provo a fare strptime con millisecondi
+                            begin
+                                issue_instant_resp_datetime = DateTime.strptime(issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
+                            rescue => exc2
+                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' issue istant anche con millisecondi" #caso 110
+                            end
                         end
-                    end
-                    assertion_issue_instant_resp = response.assertion_issue_instant
-                    begin
-                        assertion_issue_instant_resp_datetime = DateTime.strptime(assertion_issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%SZ")
-                    rescue => exc
-                        #provo a fare strptime con millisecondi
+                        assertion_issue_instant_resp = response.assertion_issue_instant
                         begin
-                            assertion_issue_instant_resp_datetime = DateTime.strptime(assertion_issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
-                        rescue => exc2
-                            errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell'issue istant dell'assertion anche con millisecondi" #caso 110
+                            assertion_issue_instant_resp_datetime = DateTime.strptime(assertion_issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%SZ")
+                        rescue => exc
+                            #provo a fare strptime con millisecondi
+                            begin
+                                assertion_issue_instant_resp_datetime = DateTime.strptime(assertion_issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
+                            rescue => exc2
+                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell'issue istant dell'assertion anche con millisecondi" #caso 110
+                            end
                         end
+                        
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime > issue_instant_resp_datetime" if issue_instant_req_datetime > issue_instant_resp_datetime #caso spid valid 14
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_resp_datetime.to_date != Date.today" if issue_instant_resp_datetime.to_date != Date.today #caso spid valid 15
+                        #asserzioni
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime > assertion_issue_instant_resp_datetime" if issue_instant_req_datetime > assertion_issue_instant_resp_datetime #caso spid valid 39
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: assertion_issue_instant_resp_datetime.to_date != Date.today" if assertion_issue_instant_resp_datetime.to_date != Date.today #caso spid valid 40
                     end
-                    
-                    errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime > issue_instant_resp_datetime" if issue_instant_req_datetime > issue_instant_resp_datetime #caso spid valid 14
-                    errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_resp_datetime.to_date != Date.today" if issue_instant_resp_datetime.to_date != Date.today #caso spid valid 15
-                    #asserzioni
-                    errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime > assertion_issue_instant_resp_datetime" if issue_instant_req_datetime > assertion_issue_instant_resp_datetime #caso spid valid 39
-                    errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: assertion_issue_instant_resp_datetime.to_date != Date.today" if assertion_issue_instant_resp_datetime.to_date != Date.today #caso spid valid 40
-                end
 
-                #istante di ricezione della response
-                ricezione_response_datetime = (Time.now.utc+1).to_datetime #formato utc
+                    #istante di ricezione della response
+                    ricezione_response_datetime = (Time.now.utc+1).to_datetime #formato utc
 
-                #controllo se Attributo NotOnOrAfter di SubjectConfirmationData precedente all'istante di ricezione della response, caso 66
-                not_on_or_after = response.assertion_subject_confirmation_data_not_on_or_after
-                unless not_on_or_after.blank?
-                    
-                    begin
-                        not_on_or_after_datetime = DateTime.strptime(not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%SZ")
-                    rescue => exc
-                        #errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: problema parsing formato" #caso di data non valida, controlla gemma..duplicato
-                        #provo a fare strptime con millisecondi
+                    #controllo se Attributo NotOnOrAfter di SubjectConfirmationData precedente all'istante di ricezione della response, caso 66
+                    not_on_or_after = response.assertion_subject_confirmation_data_not_on_or_after
+                    unless not_on_or_after.blank?
+                        
                         begin
-                            not_on_or_after_datetime = DateTime.strptime(not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
-                        rescue => exc2
-                            errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' assertion_subject_confirmation_data_not_on_or_after anche con millisecondi" 
+                            not_on_or_after_datetime = DateTime.strptime(not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%SZ")
+                        rescue => exc
+                            #errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: problema parsing formato" #caso di data non valida, controlla gemma..duplicato
+                            #provo a fare strptime con millisecondi
+                            begin
+                                not_on_or_after_datetime = DateTime.strptime(not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
+                            rescue => exc2
+                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' assertion_subject_confirmation_data_not_on_or_after anche con millisecondi" 
+                            end
                         end
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: not_on_or_after_datetime < ricezione_response_datetime" if not_on_or_after_datetime < ricezione_response_datetime
                     end
-                    errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: not_on_or_after_datetime < ricezione_response_datetime" if not_on_or_after_datetime < ricezione_response_datetime
-                end
-                    
-                #controllo se Attributo NotBefore di Condition successivo all'instante di ricezione della response, caso 78
-                not_before = response.assertion_conditions_not_before
-                unless not_before.blank?
-                    
-                    begin
-                        not_before_datetime = DateTime.strptime(not_before.to_s, "%Y-%m-%dT%H:%M:%SZ")
-                    rescue => exc
-                        #errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: not_on_or_after_datetime < ricezione_response_datetime" #caso di data non valida, controlla gemma..duplicato
-                        #provo a fare strptime con millisecondi
+                        
+                    #controllo se Attributo NotBefore di Condition successivo all'instante di ricezione della response, caso 78
+                    not_before = response.assertion_conditions_not_before
+                    unless not_before.blank?
+                        
                         begin
-                            not_before_datetime = DateTime.strptime(not_before.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
-                        rescue => exc2
-                            errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell'assertion_conditions_not_before  anche con millisecondi" 
+                            not_before_datetime = DateTime.strptime(not_before.to_s, "%Y-%m-%dT%H:%M:%SZ")
+                        rescue => exc
+                            #errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: not_on_or_after_datetime < ricezione_response_datetime" #caso di data non valida, controlla gemma..duplicato
+                            #provo a fare strptime con millisecondi
+                            begin
+                                not_before_datetime = DateTime.strptime(not_before.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
+                            rescue => exc2
+                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell'assertion_conditions_not_before  anche con millisecondi" 
+                            end
                         end
+                        if not_before_datetime > ricezione_response_datetime
+                            errore_autenticazione "Autenticazione non riuscita!", "Intervallo di tempo non valido per autenticazione SPID"
+                        end 
                     end
-                    if not_before_datetime > ricezione_response_datetime
-                        errore_autenticazione "Autenticazione non riuscita!", "Intervallo di tempo non valido per autenticazione SPID"
-                    end 
-                end
 
-                #controllo se Attributo Attributo NotOnOrAfter di Condition precedente all'istante di ricezione della response #82
-                assertion_conditions_not_on_or_after = response.assertion_conditions_not_on_or_after
-                unless not_on_or_after.blank?
-                    
-                    begin
-                        assertion_conditions_not_on_or_after_datetime = DateTime.strptime(assertion_conditions_not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%SZ")
-                    rescue => exc
-                        #errore_autenticazione "Autenticazione non riuscita!", "errore in strptime assertion_conditions_not_on_or_after"  #caso di data non valida, controlla gemma..duplicato
-                        #provo a fare strptime con millisecondi
+                    #controllo se Attributo Attributo NotOnOrAfter di Condition precedente all'istante di ricezione della response #82
+                    assertion_conditions_not_on_or_after = response.assertion_conditions_not_on_or_after
+                    unless not_on_or_after.blank?
+                        
                         begin
-                            assertion_conditions_not_on_or_after_datetime = DateTime.strptime(assertion_conditions_not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
-                        rescue => exc2
-                            errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell'assertion_conditions_not_on_or_after  anche con millisecondi" 
+                            assertion_conditions_not_on_or_after_datetime = DateTime.strptime(assertion_conditions_not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%SZ")
+                        rescue => exc
+                            #errore_autenticazione "Autenticazione non riuscita!", "errore in strptime assertion_conditions_not_on_or_after"  #caso di data non valida, controlla gemma..duplicato
+                            #provo a fare strptime con millisecondi
+                            begin
+                                assertion_conditions_not_on_or_after_datetime = DateTime.strptime(assertion_conditions_not_on_or_after.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
+                            rescue => exc2
+                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell'assertion_conditions_not_on_or_after  anche con millisecondi" 
+                            end
                         end
+                        errore_autenticazione "Autenticazione non riuscita!", "assertion_conditions_not_on_or_after_datetime < ricezione_response_datetime" if assertion_conditions_not_on_or_after_datetime < ricezione_response_datetime
                     end
-                    errore_autenticazione "Autenticazione non riuscita!", "assertion_conditions_not_on_or_after_datetime < ricezione_response_datetime" if assertion_conditions_not_on_or_after_datetime < ricezione_response_datetime
-                end
-            end #fine controlli su assertion
+                end #fine controlli su assertion
 
-            #assegno alla response i settaggi
-            response.settings = settings
-                            
-            #Controllo nel caso che lo status della response non sia success il valore dell'errore.
-            unless response.success?
-                status_message = response.get_status_message
-                unless status_message.blank?
-                    case status_message.strip
-                        when "ErrorCode nr19"
-                            errore_autenticazione "Ripetuta sottomissione di credenziali errate (Anomalia nr 19)"
-                        when "ErrorCode nr20"
-                            errore_autenticazione "Utente privo di credenziali compatibili (Anomalia nr 20)"
-                        when "ErrorCode nr21"
-                            errore_autenticazione "Richiesta in Timeout (Anomalia nr 21)"
-                        when "ErrorCode nr22"
-                            errore_autenticazione "Consenso negato (Anomalia nr 22)"
-                        when "ErrorCode nr23"
-                            errore_autenticazione "Credenziali bloccate (Anomalia nr 23)"
-                        when "ErrorCode nr25"
-                            errore_autenticazione "Processo di autenticazione annullato dall'utente (Anomalia nr 25)"
+                #assegno alla response i settaggi
+                response.settings = settings
+                                
+                #Controllo nel caso che lo status della response non sia success il valore dell'errore.
+                unless response.success?
+                    status_message = response.get_status_message
+                    unless status_message.blank?
+                        case status_message.strip
+                            when "ErrorCode nr19"
+                                errore_autenticazione "Ripetuta sottomissione di credenziali errate (Anomalia nr 19)"
+                            when "ErrorCode nr20"
+                                errore_autenticazione "Utente privo di credenziali compatibili (Anomalia nr 20)"
+                            when "ErrorCode nr21"
+                                errore_autenticazione "Richiesta in Timeout (Anomalia nr 21)"
+                            when "ErrorCode nr22"
+                                errore_autenticazione "Consenso negato (Anomalia nr 22)"
+                            when "ErrorCode nr23"
+                                errore_autenticazione "Credenziali bloccate (Anomalia nr 23)"
+                            when "ErrorCode nr25"
+                                errore_autenticazione "Processo di autenticazione annullato dall'utente (Anomalia nr 25)"
+                        end
+                    else
+                        #non ho status message, manca l'elemento
+                        errore_autenticazione "Autenticazione non riuscita!"
                     end
-                else
-                    #non ho status message, manca l'elemento
-                    errore_autenticazione "Autenticazione non riuscita!"
                 end
-            end
-            #controllo validità response (firma ecc)
-            begin
-                response.validate! #da usare per avere info su errori
-            rescue Exception => exc_val
-                logger.error exc_val.message
-                logger.error exc_val.backtrace.join("\n") 
-                errore_autenticazione "Autenticazione non riuscita!", exc_val.message 
-            end    
-            attributi_utente = response.attributes
-            logger.debug "\n\n Attributi utente SPID: #{attributi_utente.inspect}"
-                 
-            errore_autenticazione "Attributi utente non presenti" if attributi_utente.blank?
-            
+                #controllo validità response (firma ecc)
+                begin
+                    response.validate! #da usare per avere info su errori
+                rescue Exception => exc_val
+                    logger.error exc_val.message
+                    logger.error exc_val.backtrace.join("\n") 
+                    errore_autenticazione "Autenticazione non riuscita!", exc_val.message 
+                end    
+                attributi_utente = response.attributes
+                logger.debug "\n\n Attributi utente SPID: #{attributi_utente.inspect}"
+                    
+                errore_autenticazione "Attributi utente non presenti" if attributi_utente.blank?
+                
 
-            resp = {}
-            resp['esito'] = 'ok'
-            resp['attributi_utente'] = attributi_utente
-            
+                resp = {}
+                resp['esito'] = 'ok'
+                resp['attributi_utente'] = attributi_utente
+            else
+                #se esito non ok, ripasso direttamente l'hash con l'errore
+                resp = hash_dati_cliente
+            end 
         rescue => exception
             logger.error exception.message
             logger.error exception.backtrace.join("\n") 
