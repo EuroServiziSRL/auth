@@ -1,0 +1,57 @@
+dominio: "ciccio"
+url_auth_hub: 'http://localhost:3001/auth_hub/'
+path_pkey_es: '/home/fabiano/soluzionipa/certs/soluzionipa.key'
+hash_gestori_spid: 
+  namirialid:
+    url_authnrequest: "https://idp.namirialtsp.com/idp/profile/SAML2/Redirect/SSO"
+    idp_metadata: "https://idp.namirialtsp.com/idp/metadata"
+    idp_name_qualifier: "Namirial  S.p.A."
+  spiditalia:
+    url_authnrequest: "https://spid.register.it/login/sso"
+    idp_metadata: "https://spid.register.it/login/metadata"
+    idp_name_qualifier: "SpidItalia REGISTER.IT"
+  arubaid:
+    url_authnrequest: "https://loginspid.aruba.it/ServiceLoginWelcome"
+    idp_metadata: "https://loginspid.aruba.it/metadata"
+    idp_name_qualifier: "Aruba Pec S.p.A."
+  infocert: 
+    url_authnrequest: "https://identity.infocert.it/spid/samlsso"
+    idp_metadata: "https://identity.infocert.it/metadata/metadata.xml"
+    idp_name_qualifier: "Infocert S.p.A."
+  poste:
+    url_authnrequest: "https://posteid.poste.it/jod-fs/ssoserviceredirect"
+    idp_metadata: "http://posteid.poste.it/jod-fs/metadata/metadata.xml"
+    idp_name_qualifier: "Poste Italiane S.p.A." 
+  sielte:
+    url_authnrequest: "https://identity.sieltecloud.it/simplesaml/saml2/idp/SSO.php"
+    idp_metadata: "https://identity.sieltecloud.it/simplesaml/metadata.xml"
+    idp_name_qualifier: "Sielte S.p.A."
+  tim:
+    url_authnrequest: "https://login.id.tim.it/affwebservices/public/saml2sso"
+    idp_metadata: "https://login.id.tim.it/spid-services/MetadataBrowser/idp"
+    idp_name_qualifier: "TI Trust Technologies S.r.l."
+  intesa:
+    url_authnrequest: "https://spid.intesa.it/Time4UserServices/services/idp/AuthnRequest"
+    idp_metadata: "https://spid.intesa.it/metadata/metadata.xml"
+    idp_name_qualifier: "In.Te.S.A. S.p.A."
+  lepida:
+    url_authnrequest: "https://id.lepida.it/idp/profile/SAML2/Redirect/SSO"
+    idp_metadata: "https://id.lepida.it/idp/shibboleth"
+    idp_name_qualifier: "Lepida S.p.A."
+  eidas:
+    url_authnrequest: "https://sp-proxy.eid.gov.it/spproxy/samlsso"
+    idp_metadata: "https://sp-proxy.eid.gov.it/spproxy/idpitmetadata"
+    idp_name_qualifier: "Eidas"
+  eidas_qa:
+    url_authnrequest: "https://sp-proxy.pre.eid.gov.it/spproxy/samlsso"
+    idp_metadata: "https://sp-proxy.pre.eid.gov.it/spproxy/idpitmetadata"
+    idp_name_qualifier: "Eidas"
+  spid_validator:
+    url_authnrequest: "http://localhost:8080/samlsso"
+    idp_metadata: "http://localhost:8080/metadata.xml"
+    idp_name_qualifier: "Spid Validator Locale"
+hash_aggregatore:
+  soggetto_aggregatore: 'SoggettoAggregatore'
+  piva_aggregatore: 'piva_aggregatore'
+  cipa_aggregatore: 'cipa_aggregatore'
+  cf_aggregatore: 'cf_aggregatore'
