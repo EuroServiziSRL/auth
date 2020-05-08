@@ -50,4 +50,4 @@ gem 'httparty'
 gem 'jwe'
 
 gem 'cie-es' #, path: '/home/fabiano/soluzionipa/rails/cie-es'
-gem 'spid-es', path: '/home/fabiano/soluzionipa/siti/spid-es'
+gem 'spid-es'#, path: '/home/fabiano/soluzionipa/siti/spid-es'
