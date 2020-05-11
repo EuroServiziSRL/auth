@@ -1,5 +1,8 @@
 require_relative 'boot'
 
+# vedi 
+# https://blog.sundaycoding.com/blog/2016/08/10/how-to-remove-action-cable-from-a-rails-app/
+
 require "rails"
 # Pick the frameworks you want:
 # require "active_model/railtie"
