@@ -14,8 +14,12 @@ class SpidController < ApplicationController
     #GET get_metadata
     def get_metadata
         begin
+            if request_params['client_id'].blank?
+                hash_dati_cliente = dati_cliente_da_jwe
+            else
+                hash_dati_cliente = dati_cliente_da_jwt
+            end
             #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
-            hash_dati_cliente = dati_cliente_da_token
             if hash_dati_cliente['esito'] == 'ok'
                 #preparo i params per creare i settings
                 params_per_settings = params_per_settings(hash_dati_cliente)
@@ -46,7 +50,7 @@ class SpidController < ApplicationController
         begin
             #arriva id dell'ente, chiamo servizio di auth_hub che mi restituisce i dati del cliente
             #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
-            hash_dati_cliente = dati_cliente_da_token 
+            hash_dati_cliente = dati_cliente_da_jwt
             if hash_dati_cliente['esito'] == 'ok'
                 #preparo i parametri per avere i setting per fare la chiamata
                 params_per_settings = params_per_settings(hash_dati_cliente)
@@ -94,7 +98,7 @@ class SpidController < ApplicationController
     def check_assertion
         begin
             #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
-            hash_dati_cliente = dati_cliente_da_token
+            hash_dati_cliente = dati_cliente_da_jwt
             if hash_dati_cliente['esito'] == 'ok'
                 #preparo i params per creare i settings
                 params_per_settings = params_per_settings(hash_dati_cliente)
@@ -294,7 +298,7 @@ class SpidController < ApplicationController
     #     "app_ext"=>false,
     #     "esito"=>"ok"}
     #verifico secret
-    def dati_cliente_da_token
+    def dati_cliente_da_jwt
         begin
             jwt_token = request.headers['Authorization']
             jwt_token = jwt_token.split(' ').last if jwt_token
@@ -352,23 +356,50 @@ class SpidController < ApplicationController
         end
     end
 
-    def params_per_settings(hash_dati_cliente)
-        #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
-        cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
-        cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
-        cert_temp_file.rewind
-        key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
-        key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64'])))
-        key_temp_file.rewind
+    def dati_cliente_da_jwe
+        begin
+            jwe_token = request.headers['Authorization']
+            jwe_token = jwe_token.split(' ').last if jwe_token
+            unless jwe_token.blank?
+                #arriva un jwe, devo decriptarlo
+                priv_key = OpenSSL::PKey::RSA.new(File.read(Settings.path_pkey_es))
+                info_cliente_decoded = JWE.decrypt(jwe_token, priv_key)
+                hash_info_cliente = JSON.parse(info_cliente_decoded)
+                hash_info_cliente['esito'] = 'ok'
+                return hash_info_cliente        
+            else
+                return { 'esito' => 'ko', 'msg_errore' => "Dati di autorizzazione mancanti" }
+            end
+        rescue => exc
+            logger.error exc.message
+            logger.error exc.backtrace.join("\n") 
+            return { 'esito' => 'ko', 'msg_errore' => exc.message+"\n\n"+exc.backtrace.join("\n") }
+        end
+    end
 
+
+    def params_per_settings(hash_dati_cliente)
         params_per_settings = {}
+        #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
+        unless hash_dati_cliente['cert_b64'].blank?
+            cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
+            cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
+            cert_temp_file.rewind
+            params_per_settings['cert_path'] = cert_temp_file.path
+        end
+        unless hash_dati_cliente['key_b64'].blank?
+            key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
+            key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64']))) 
+            key_temp_file.rewind
+            params_per_settings['private_key_path'] = key_temp_file.path
+        end
+   
         params_per_settings['issuer'] = hash_dati_cliente['issuer']
         params_per_settings['organization'] = { "org_name" => hash_dati_cliente['org_name'], 
                                                 "org_display_name" => hash_dati_cliente['org_display_name'], 
                                                 "org_url" => hash_dati_cliente['org_url'] }
         params_per_settings['portal_url'] = hash_dati_cliente['org_url']
-        params_per_settings['cert_path'] = cert_temp_file.path
-        params_per_settings['private_key_path'] = key_temp_file.path
+        
         default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
                                                         'external' => false,
                                                         'default' => true, 
