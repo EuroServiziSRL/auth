@@ -50,9 +50,9 @@ hash_gestori_spid:
     idp_metadata: "https://validator.spid.gov.it/metadata.xml"
     idp_name_qualifier: "Spid Validator"
 hash_aggregatore:
-  soggetto_aggregatore: 'SoggettoAggregatore'
-  piva_aggregatore: 'piva_aggregatore'
-  cipa_aggregatore: 'cipa_aggregatore'
-  cf_aggregatore: 'cf_aggregatore'
+  soggetto_aggregatore: 'Dedagroup Public Services s.r.l.'
+  piva_aggregatore: '01727860221'
+  cipa_aggregatore: ""
+  cf_aggregatore: '03188950103'
 id_clienti_tracciati: ['234jh23h']
 attiva_tracciamento_clienti_indicati: true
