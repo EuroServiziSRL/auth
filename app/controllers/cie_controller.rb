@@ -22,9 +22,9 @@ class CieController < ApplicationController
                 resp = hash_dati_cliente
             else
                 #preparo i params per creare i settings
-                params_per_settings = params_per_settings(hash_dati_cliente)
+                hash_parametri_settings = params_per_settings(hash_dati_cliente)
                 
-                saml_settings = get_saml_settings(params_per_settings)
+                saml_settings = get_saml_settings(hash_parametri_settings)
                 meta = Cie::Saml::Metadata.new
                 resp = {}
                 resp['esito'] = 'ok'
@@ -54,16 +54,17 @@ class CieController < ApplicationController
                 resp = hash_dati_cliente
             else
                 #preparo i parametri per avere i setting per fare la chiamata
-                params_per_settings = params_per_settings(hash_dati_cliente)
-                saml_settings = get_saml_settings(params_per_settings)
+                hash_parametri_settings = params_per_settings(hash_dati_cliente)
+                saml_settings = get_saml_settings(hash_parametri_settings)
                 
                 #create an instance of Cie::Saml::Authrequest
                 request = Cie::Saml::Authrequest.new(saml_settings)
                 auth_request = request.create
-
-                #stampo la request 
-                #logger.debug "\n REQUEST #{auth_request.request} \n"
-
+                
+                #stampo la request se ho la conf abilitata per tracciare e il client_id viene messo in array id_clienti_tracciati
+                if verifica_tracciamento_attivo(request_params['client_id'])
+                    logger.debug "\n\n REQUEST PER *#{hash_dati_cliente['org_name']}*:\n #{auth_request.request} \n"    
+                end
                 # Based on the IdP metadata, select the appropriate binding 
                 # and return the action to perform to the controller
                 meta = Cie::Saml::Metadata.new(saml_settings)
@@ -102,8 +103,8 @@ class CieController < ApplicationController
                 resp = hash_dati_cliente
             else
                 #preparo i params per creare i settings
-                params_per_settings = params_per_settings(hash_dati_cliente)
-                settings = get_saml_settings(params_per_settings)
+                hash_parametri_settings = params_per_settings(hash_dati_cliente)
+                settings = get_saml_settings(hash_parametri_settings)
                 saml_response = request_params[:assertion]
         
                 #creo un oggetto response
@@ -188,8 +189,8 @@ class CieController < ApplicationController
 
     private
     
-
-    #arriva un hash_dati_cliente del tipo 
+    #con il client_id nella request chiamo auth_hub con jwe
+    #e ottengo un hash_dati_cliente del tipo 
     # { "client"=>"78fds78sd",
     #    "secret"=>"dv87s86df8vd8v8vdhvtvehal4545sjkljb",
     #     "url_app_ext"=>"",
@@ -201,7 +202,18 @@ class CieController < ApplicationController
     #     "key_b64"=>"localhost.key",
     #     "cert_b64"=>"localhost.crt",
     #     "app_ext"=>false,
-    #     "esito"=>"ok"}
+        # "spid_pre_prod"=>false, 
+        # "cie_pre_prod"=>true, 
+        # "eidas_pre_prod"=>false, 
+        # "aggregato"=>false, 
+        # "cod_ipa_aggregato"=>"", 
+        # "p_iva_aggregato"=>"", 
+        # "cf_aggregato"=>"", 
+        # "hash_assertion_consumer"=>{"0"=>{"url_consumer"=>"", "external"=>false, "default"=>true, 
+        # "array_campi"=>["dateOfBirth", "fiscalNumber", "name", "familyName"], "testo"=>"Portale del Comune di Chiampo"}}, 
+        # "test"=>true, 
+        # "esito"=>"ok"
+        # }
     #verifico secret
     def dati_cliente_da_token
         begin
@@ -223,7 +235,7 @@ class CieController < ApplicationController
                 unless response.blank?
                     if response['esito'] == 'ok'
                         begin
-                        #arriva un jwe, devo decriptarlo
+                        #arriva un jwe, devo decriptarlo con la chiave priv soluzionipa
                             priv_key = OpenSSL::PKey::RSA.new(File.read(Settings.path_pkey_es))
                             info_cliente_decoded = JWE.decrypt(response['jwe'], priv_key)
                         rescue => exc
@@ -231,7 +243,7 @@ class CieController < ApplicationController
                         end
                         begin
                             hash_dati_cliente = JSON.parse(info_cliente_decoded)
-                            #decodifico il jwt_token con la secret arrivata nel jwe
+                            #decodifico il jwt_token con la secret arrivata nel jwe!
                             jwt_token_decoded = JsonWebToken.decode(jwt_token, hash_dati_cliente['secret'])
                         rescue => exc
                             return { 'esito' => 'ko', 'msg_errore' => exc.message }
@@ -285,12 +297,43 @@ class CieController < ApplicationController
         encode(qssigned)
     end
 
+    #Dai dati registrati su auth_hub porto quelli che mi servono per i settings
+    def params_per_settings(hash_dati_cliente)
+        #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
+        cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
+        cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
+        cert_temp_file.rewind
+        key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
+        key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64'])))
+        key_temp_file.rewind
+
+        hash_settings = {}
+        hash_settings['issuer'] = hash_dati_cliente['issuer']
+        hash_settings['organization'] = { "org_name" => hash_dati_cliente['org_name'], 
+                                                "org_display_name" => hash_dati_cliente['org_display_name'], 
+                                                "org_url" => hash_dati_cliente['org_url'] }
+        hash_settings['portal_url'] = hash_dati_cliente['org_url']
+        hash_settings['cert_path'] = cert_temp_file.path
+        hash_settings['private_key_path'] = key_temp_file.path
+        default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
+                                                        'external' => false,
+                                                        'default' => true, 
+                                                        'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
+                                                        'testo' => 'Accedi con CIE'
+                                            } } 
+        hash_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
+        hash_settings['cie'] = hash_dati_cliente['cie']
+        hash_settings['cie_pre_prod'] = hash_dati_cliente['cie_pre_prod']
+        hash_settings
+    end
+
     #passo un hash di parametri per creare i settings
     def get_saml_settings(params_settings)
-        settings = Cie::Saml::Settings.new
+        portal_url = params_settings['portal_url']
+
+        logger.debug "\n\n PARAMETRI PER SETTINGS #{params_settings.inspect}"
         
-        portal_url = params_settings['portal_url'] 
-    
+        settings = Cie::Saml::Settings.new
         settings.assertion_consumer_service_url     = params_settings['assertion_consumer_url'] || portal_url+'/auth/cie/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
         settings.sp_cert                            = params_settings['cert_path']
@@ -300,7 +343,7 @@ class CieController < ApplicationController
         settings.name_identifier_format             = ["urn:oasis:names:tc:SAML:2.0:nameid-format:transient"]
         settings.single_logout_destination          = params_settings['single_logout_destination']
         settings.idp_name_qualifier                 = "Servizi CIE"
-        if params_settings['test'] == true
+        if params_settings['cie_pre_prod'] == true 
             settings.destination_service_url            = "https://preproduzione.idserver.servizicie.interno.gov.it/idp/profile/SAML2/Redirect/SSO"
             settings.idp_sso_target_url                 = "https://preproduzione.idserver.servizicie.interno.gov.it/idp/profile/SAML2/Redirect/SSO"
         else
@@ -309,7 +352,7 @@ class CieController < ApplicationController
         end
         settings.authn_context                      = ["https://www.spid.gov.it/SpidL3"]
         settings.skip_validation                    = params_settings['skip_validation']
-        if params_settings['test'] == true
+        if params_settings['cie_pre_prod'] == true
             settings.idp_metadata                   = "https://preproduzione.idserver.servizicie.interno.gov.it/idp/shibboleth?Metadata"
         else
             settings.idp_metadata                   = "https://idserver.servizicie.interno.gov.it/idp/shibboleth?Metadata"
@@ -325,36 +368,14 @@ class CieController < ApplicationController
         settings.hash_assertion_consumer.each_pair{ |index,hash_service|
             hash_service['url_consumer'] = settings.assertion_consumer_service_url if hash_service['url_consumer'].blank?
         }
-        
         settings
     end
 
-    def params_per_settings(hash_dati_cliente)
-        #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
-        cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
-        cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
-        cert_temp_file.rewind
-        key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
-        key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64'])))
-        key_temp_file.rewind
-
-        params_per_settings = {}
-        params_per_settings['issuer'] = hash_dati_cliente['issuer']
-        params_per_settings['organization'] = { "org_name" => hash_dati_cliente['org_name'], 
-                                                "org_display_name" => hash_dati_cliente['org_display_name'], 
-                                                "org_url" => hash_dati_cliente['org_url'] }
-        params_per_settings['portal_url'] = hash_dati_cliente['org_url']
-        params_per_settings['cert_path'] = cert_temp_file.path
-        params_per_settings['private_key_path'] = key_temp_file.path
-        default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
-                                                        'external' => false,
-                                                        'default' => true, 
-                                                        'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
-                                                        'testo' => 'User Data'
-                                            } } 
-        params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
-        params_per_settings
+    def verifica_tracciamento_attivo(client_id)
+        return Settings.attiva_tracciamento_clienti_indicati && Settings.id_clienti_tracciati.include?(client_id)
     end
+
+
 
     def request_params
         params.permit(:client_id, :assertion)

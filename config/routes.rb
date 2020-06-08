@@ -8,5 +8,6 @@ Rails.application.routes.draw do
   get 'spid/get_metadata' => 'spid#get_metadata', :as => :get_metadata_spid
   get 'spid/get_auth_request' => 'spid#get_auth_request', :as => :get_auth_request_spid
   post 'spid/check_assertion' => 'spid#check_assertion', :as => :check_assertion_spid
+  get 'spid/aggiorna_cache_metadata' => 'spid#aggiorna_cache_metadata', :as => :aggiorna_cache_metadata
 
 end

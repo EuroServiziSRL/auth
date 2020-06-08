@@ -54,3 +54,5 @@ hash_aggregatore:
   piva_aggregatore: 'piva_aggregatore'
   cipa_aggregatore: 'cipa_aggregatore'
   cf_aggregatore: 'cf_aggregatore'
+id_clienti_tracciati: ['234jh23h']
+attiva_tracciamento_clienti_indicati: true

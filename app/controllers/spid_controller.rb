@@ -14,36 +14,58 @@ class SpidController < ApplicationController
     #GET get_metadata
     def get_metadata
         begin
-            if request_params['client_id'].blank?
-                hash_dati_cliente = dati_cliente_da_jwe
+            unless request_params['client_id'].blank?
+                #ho il client_id, uso la cache se disponibile
+                result = Rails.cache.fetch("metadata_cached_#{request_params['client_id']}", expires_in: 1.weeks) do
+                    unless request_params['zip'].blank?
+                        hash_dati_cliente = dati_cliente_da_jwe #chiamata interna da genera_zip_metadata
+                    else
+                        hash_dati_cliente = dati_cliente_da_jwt                    
+                    end
+                    #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
+                    if hash_dati_cliente['esito'] == 'ok'
+                        #preparo i params per creare i settings
+                        params_per_settings = params_per_settings(hash_dati_cliente)
+                        saml_settings = get_saml_settings(params_per_settings)
+                        meta = Spid::Saml::Metadata.new
+                        { 'esito' => 'ok', 'metadata' => meta.generate(saml_settings) }
+                    else
+                        #se esito non ok, ripasso direttamente l'hash con l'errore
+                        hash_dati_cliente
+                    end  
+                end
+                if result['esito'] == 'ko'                
+                    Rails.cache.delete("metadata_cached_#{request_params['client_id']}")
+                end
             else
-                hash_dati_cliente = dati_cliente_da_jwt
-            end
-            #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
-            if hash_dati_cliente['esito'] == 'ok'
-                #preparo i params per creare i settings
-                params_per_settings = params_per_settings(hash_dati_cliente)
-                
-                saml_settings = get_saml_settings(params_per_settings)
-                meta = Spid::Saml::Metadata.new
-                resp = {}
-                resp['esito'] = 'ok'
-                resp['metadata'] = meta.generate(saml_settings)
-            else
-                #se esito non ok, ripasso direttamente l'hash con l'errore
-                resp = hash_dati_cliente
+                result = {'esito' => 'ko', 'msg_errore' => 'Client mancante' }
             end
         rescue => exception
             logger.error exception.message
             logger.error exception.backtrace.join("\n") 
-            resp = {}
-            resp['esito'] = 'ko'
-            resp['msg_errore'] = exception.message
+            result = {}
+            result['esito'] = 'ko'
+            result['msg_errore'] = exception.message
         ensure
-            render json: resp
+            render json: result
         end
         
     end
+
+    #GET aggiorna_cache_metadata Arriva nel jwe il client_id, cancello dalla cache i metadata
+    def aggiorna_cache_metadata
+        hash_dati_cliente = dati_cliente_da_jwe
+        if hash_dati_cliente['esito'] == 'ok'
+            begin
+                Rails.cache.delete("metadata_cached_#{hash_dati_cliente['client']}")
+            rescue => exc
+                render json: { 'esito' => 'ko', 'msg_errore' => exc.message }
+            end
+        else
+            render json: hash_return, status: :unauthorized
+        end
+    end
+
 
     #POST get_auth_request
     def get_auth_request
@@ -500,7 +522,7 @@ class SpidController < ApplicationController
 
 
     def request_params
-        params.permit(:client_id, :idp, :assertion, :issue_instant)
+        params.permit(:client_id, :idp, :assertion, :issue_instant, :zip)
     end
 
 

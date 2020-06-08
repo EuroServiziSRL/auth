@@ -35,7 +35,7 @@ gem 'addressable', '= 2.4.0'
 gem 'bootsnap', '= 1.4.6', require: false
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin AJAX possible
-gem 'rack-cors'
+gem 'rack-cors', '= 1.1.1'
 
 group :development do
   gem 'listen', '>= 3.0.5', '< 3.2'
@@ -52,7 +52,7 @@ end
 
 gem 'zlib', "= 1.0.0"
 gem 'jwt', '= 2.2.1'
-gem 'httparty' , '= 0.18.0' 
+gem 'httparty', '= 0.18.0' 
 gem 'jwe', '= 0.4.0'
 
 gem 'cie-es' #, path: '/home/fabiano/soluzionipa/rails/cie-es'
