@@ -82,13 +82,19 @@ class SpidController < ApplicationController
                 request = Spid::Saml::Authrequest.new(saml_settings)
                 auth_request = request.create
             
-                #stampo la request se metto il log level debug
-                #logger.debug "\n REQUEST #{auth_request.request} \n"
+                
 
                 meta = Spid::Saml::Metadata.new(saml_settings)
                 #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
                 pkey = hash_dati_cliente['aggregato'] ? nil : params_per_settings["private_key_path"]
                 signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",pkey)
+
+                #stampo la request se ho la conf abilitata per tracciare e il client_id viene messo in array id_clienti_tracciati
+                if verifica_tracciamento_attivo(request_params['client_id'])
+                    logger.debug "\n\n REQUEST PER *#{hash_dati_cliente['org_name']}*:\n #{auth_request.request} \n" 
+                    logger.debug "\n\n SIGNATURE PER *#{hash_dati_cliente['org_name']}*:\n #{signature} \n" 
+                end
+
                 sso_request = meta.create_sso_request( auth_request.request, {  :RelayState   => request.uuid,
                                                                                 :SigAlg       => "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
                                                                                 :Signature    => signature } )
@@ -520,6 +526,9 @@ class SpidController < ApplicationController
         encode(qssigned)
     end
 
+    def verifica_tracciamento_attivo(client_id)
+        return Settings.attiva_tracciamento_clienti_indicati && Settings.id_clienti_tracciati.include?(client_id)
+    end
 
     def request_params
         params.permit(:client_id, :idp, :assertion, :issue_instant, :zip)
