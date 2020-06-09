@@ -437,10 +437,18 @@ class SpidController < ApplicationController
         params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
         #se chiedo i metadata non passo idp
         unless hash_dati_cliente['idp'].blank?
-            params_per_settings['destination_service_url'] =  Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
-            params_per_settings['idp_sso_target_url'] =  Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
-            params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata']
-            params_per_settings['idp_name_qualifier']= Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_name_qualifier']
+            #se sto usando spid_validator e sono con pre_prod allora attivo lo spid_validator in locale
+            if hash_dati_cliente['idp'] == 'spid_validator' && hash_dati_cliente['spid_pre_prod']
+                params_per_settings['destination_service_url'] = "http://localhost:8080/samlsso"
+                params_per_settings['idp_sso_target_url'] = "http://localhost:8080/samlsso"
+                params_per_settings['idp_metadata'] = "http://localhost:8080/metadata.xml"
+                params_per_settings['idp_name_qualifier'] = "Spid Validator Locale"
+            else
+                params_per_settings['destination_service_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
+                params_per_settings['idp_sso_target_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
+                params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata']
+                params_per_settings['idp_name_qualifier'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_name_qualifier']
+            end
         end
         #se ho richiesto l'accesso con EIDAS devo cambiare gli index 
         if hash_dati_cliente['idp'] == "eidas"
