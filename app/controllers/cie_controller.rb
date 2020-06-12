@@ -70,7 +70,7 @@ class CieController < ApplicationController
                 meta = Cie::Saml::Metadata.new(saml_settings)
 
                 #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
-                pkey = hash_dati_cliente['aggregato'] ? nil : params_per_settings["private_key_path"]
+                pkey = hash_dati_cliente['aggregato'] ? nil : hash_parametri_settings["private_key_path"]
 
                 signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", pkey)
                 
