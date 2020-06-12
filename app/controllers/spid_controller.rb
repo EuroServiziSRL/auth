@@ -81,9 +81,7 @@ class SpidController < ApplicationController
                 #create an instance of Spid::Saml::Authrequest
                 request = Spid::Saml::Authrequest.new(saml_settings)
                 auth_request = request.create
-            
-                
-
+        
                 meta = Spid::Saml::Metadata.new(saml_settings)
                 #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
                 pkey = hash_dati_cliente['aggregato'] ? nil : params_per_settings["private_key_path"]
@@ -103,7 +101,7 @@ class SpidController < ApplicationController
                 resp = {}
                 resp['esito'] = 'ok'
                 resp['b64_request_comp'] = Base64.strict_encode64(Zlib::Deflate.deflate(auth_request.request))
-                resp['uuid'] = auth_request.uuid
+                resp['uuid'] = auth_request.uuid #sarebbe l'attributo ID
                 resp['issue_instant'] = auth_request.issue_instant
                 resp['sso_request'] = sso_request
             else
@@ -128,6 +126,9 @@ class SpidController < ApplicationController
             #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
             hash_dati_cliente = dati_cliente_da_jwt
             if hash_dati_cliente['esito'] == 'ok'
+                #istante di ricezione della response
+                ricezione_response_datetime = (Time.now.utc).to_datetime #formato utc
+                
                 #preparo i params per creare i settings
                 params_per_settings = params_per_settings(hash_dati_cliente)
                 settings = get_saml_settings(params_per_settings)
@@ -169,8 +170,7 @@ class SpidController < ApplicationController
                         errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: assertion_issue_instant_resp_datetime.to_date != Date.today" if assertion_issue_instant_resp_datetime.to_date != Date.today #caso spid valid 40
                     end
 
-                    #istante di ricezione della response
-                    ricezione_response_datetime = (Time.now.utc+1).to_datetime #formato utc
+                    
 
                     #controllo se Attributo NotOnOrAfter di SubjectConfirmationData precedente all'istante di ricezione della response, caso 66
                     not_on_or_after = response.assertion_subject_confirmation_data_not_on_or_after
@@ -263,12 +263,16 @@ class SpidController < ApplicationController
                     logger.error exc_val.backtrace.join("\n") 
                     errore_autenticazione "Autenticazione non riuscita!", exc_val.message 
                 end    
+
+                #controllo se id in request == a id della response
+                request_id_value = request_params[:request_id]
+                errore_autenticazione "Autenticazione non riuscita!", "Response non corrispondente alla Request inviata" if response.response_to_id != request_id_value
+
                 attributi_utente = response.attributes
                 logger.debug "\n\n Attributi utente SPID: #{attributi_utente.inspect}"
                     
                 errore_autenticazione "Attributi utente non presenti" if attributi_utente.blank?
                 
-
                 resp = {}
                 resp['esito'] = 'ok'
                 resp['attributi_utente'] = attributi_utente
@@ -539,7 +543,7 @@ class SpidController < ApplicationController
     end
 
     def request_params
-        params.permit(:client_id, :idp, :assertion, :issue_instant, :zip)
+        params.permit(:client_id, :idp, :assertion, :issue_instant, :request_id, :zip)
     end
 
 
