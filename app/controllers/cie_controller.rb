@@ -317,14 +317,27 @@ class CieController < ApplicationController
         key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64'])))
         key_temp_file.rewind
 
+        #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
+        unless hash_dati_cliente['cert_b64'].blank?
+            cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
+            cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
+            cert_temp_file.rewind
+            hash_settings['cert_path'] = cert_temp_file.path
+        end
+        unless hash_dati_cliente['key_b64'].blank?
+            key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
+            key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64']))) 
+            key_temp_file.rewind
+            hash_settings['private_key_path'] = key_temp_file.path
+        end
+
         hash_settings = {}
         hash_settings['issuer'] = hash_dati_cliente['issuer']
         hash_settings['organization'] = { "org_name" => hash_dati_cliente['org_name'], 
                                                 "org_display_name" => hash_dati_cliente['org_display_name'], 
                                                 "org_url" => hash_dati_cliente['org_url'] }
         hash_settings['portal_url'] = hash_dati_cliente['org_url']
-        hash_settings['cert_path'] = cert_temp_file.path
-        hash_settings['private_key_path'] = key_temp_file.path
+        
         default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
                                                         'external' => false,
                                                         'default' => true, 
