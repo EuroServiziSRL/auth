@@ -309,14 +309,8 @@ class CieController < ApplicationController
 
     #Dai dati registrati su auth_hub porto quelli che mi servono per i settings
     def params_per_settings(hash_dati_cliente)
-        #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
-        cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
-        cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
-        cert_temp_file.rewind
-        key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
-        key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64'])))
-        key_temp_file.rewind
-
+        hash_settings = {}
+        
         #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
         unless hash_dati_cliente['cert_b64'].blank?
             cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
@@ -330,8 +324,7 @@ class CieController < ApplicationController
             key_temp_file.rewind
             hash_settings['private_key_path'] = key_temp_file.path
         end
-
-        hash_settings = {}
+        
         hash_settings['issuer'] = hash_dati_cliente['issuer']
         hash_settings['organization'] = { "org_name" => hash_dati_cliente['org_name'], 
                                                 "org_display_name" => hash_dati_cliente['org_display_name'], 
