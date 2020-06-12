@@ -68,7 +68,11 @@ class CieController < ApplicationController
                 # Based on the IdP metadata, select the appropriate binding 
                 # and return the action to perform to the controller
                 meta = Cie::Saml::Metadata.new(saml_settings)
-                signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256")
+
+                #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
+                pkey = hash_dati_cliente['aggregato'] ? nil : params_per_settings["private_key_path"]
+
+                signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", pkey)
                 
                 sso_request = meta.create_sso_request( auth_request.request, { :RelayState   => request.uuid,
                                                                         :SigAlg       => "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
@@ -277,7 +281,8 @@ class CieController < ApplicationController
 
 
     #Crea la signature con metodi della gemma (vedi include Cie::Saml::Coding)
-    def get_signature(relayState, request, sigAlg)
+    #passo la pkey oppure uso il cert fornito da agid
+    def get_signature(relayState, request, sigAlg, pkey=nil)
         #url encode relayState
         relayState_encoded = escape(relayState)
         #deflate e base64 della samlrequest
@@ -291,8 +296,13 @@ class CieController < ApplicationController
         #puts "**QUERYSTRING** = "+querystring
         #digest = OpenSSL::Digest::SHA1.new(querystring.strip) sha1
         digest = OpenSSL::Digest::SHA256.new(querystring.strip) #sha2 a 256
-        chiave_privata = "#{Rails.root}/config/certs/key.pem" #chiave fornita da agid
-        pk = OpenSSL::PKey::RSA.new File.read(chiave_privata) #chiave privata
+        unless pkey.blank?
+            pk = OpenSSL::PKey::RSA.new File.read(pkey) #chiave privata
+        else
+            #uso cert per aggregatore
+            chiave_privata = "#{Rails.root}/config/certs/key.pem" #chiave fornita da agid
+            pk = OpenSSL::PKey::RSA.new File.read(chiave_privata) #chiave privata
+        end
         qssigned = pk.sign(digest,querystring.strip)
         encode(qssigned)
     end
