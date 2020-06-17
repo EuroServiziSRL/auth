@@ -183,7 +183,7 @@ class CieController < ApplicationController
     end
 
     def errore_autenticazione(msg,dettaglio=nil)
-        render json: { 'esito' => 'ko', 'msg_errore' => msg+(dettaglio.nil? ? '' : "#"+dettaglio) }
+        render json: { 'esito' => 'ko', 'msg_errore' => msg+(dettaglio.nil? ? '' : "#"+dettaglio) } and return
     end
 
     def not_found
