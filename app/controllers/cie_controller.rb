@@ -123,17 +123,17 @@ class CieController < ApplicationController
                     unless status_message.blank?
                         case status_message.strip
                             when "ErrorCode nr19"
-                                errore_autenticazione "Ripetuta sottomissione di credenziali errate (Anomalia nr 19)"
+                                errore_autenticazione "Ripetuta sottomissione di credenziali errate."
                             when "ErrorCode nr20"
-                                errore_autenticazione "Utente privo di credenziali compatibili (Anomalia nr 20)"
+                                errore_autenticazione "Utente privo di credenziali compatibili."
                             when "ErrorCode nr21"
-                                errore_autenticazione "Richiesta in Timeout (Anomalia nr 21)"
+                                errore_autenticazione "Richiesta in Timeout."
                             when "ErrorCode nr22"
-                                errore_autenticazione "Consenso negato (Anomalia nr 22)"
+                                errore_autenticazione "Consenso negato."
                             when "ErrorCode nr23"
-                                errore_autenticazione "Credenziali bloccate (Anomalia nr 23)"
+                                errore_autenticazione "Credenziali bloccate."
                             when "ErrorCode nr25"
-                                errore_autenticazione "Processo di autenticazione annullato dall'utente (Anomalia nr 25)"
+                                errore_autenticazione "Processo di autenticazione annullato dall'utente."
                         end
                     else
                         #non ho status message, manca l'elemento
