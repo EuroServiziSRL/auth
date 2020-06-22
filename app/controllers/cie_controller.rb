@@ -152,13 +152,21 @@ class CieController < ApplicationController
                 
                 errore_autenticazione "Attributi utente non presenti" if attributi_utente.blank?
                 
-                #estraggo dal Base64 l'xml
-                saml_response_dec = Base64.decode64(saml_response)
-                saml_response_dec_compressa = Zlib::Deflate.deflate(saml_response_dec)
-                
                 resp = {}
                 resp['esito'] = 'ok'
                 resp['attributi_utente'] = attributi_utente
+            end
+        rescue => exception
+            logger.error exception.message
+            logger.error exception.backtrace.join("\n") 
+            resp = {}
+            resp['esito'] = 'ko'
+            resp['msg_errore'], resp['dettaglio_log_errore'] = exception.message.split("#")
+        ensure
+            #estraggo dal Base64 l'xml
+            unless saml_response.blank?
+                saml_response_dec = Base64.decode64(saml_response)
+                saml_response_dec_compressa = Zlib::Deflate.deflate(saml_response_dec)
                 resp['response_id'] = response.response_to_id
                 resp['info_tracciatura'] = { 
                     'response' => Base64.strict_encode64(saml_response_dec_compressa),
@@ -166,33 +174,26 @@ class CieController < ApplicationController
                     'response_issue_instant' => response.issue_instant,
                     'response_issuer' => response.issuer,
                     'assertion_id' => response.assertion_id,
-                    'assertion_subject' => response.assertion_subject,
-                    'assertion_subject_name_qualifier' => response.assertion_subject_name_qualifier
+                    'assertion_subject' => (response.assertion_id.blank? ? nil : response.assertion_subject),
+                    'assertion_subject_name_qualifier' => (response.assertion_id.blank? ? nil : response.assertion_subject_name_qualifier )
                 }
             end
-        rescue => exception
-            logger.error exception.message
-            logger.error exception.backtrace.join("\n") 
-            resp = {}
-            resp['esito'] = 'ko'
-            resp['msg_errore'] = exception.message
-        ensure
             render json: resp
         end
         
     end
 
+    private
+    
     def errore_autenticazione(msg,dettaglio=nil)
-        render json: { 'esito' => 'ko', 'msg_errore' => msg+(dettaglio.nil? ? '' : "#"+dettaglio) } and return
+        raise msg+(dettaglio.nil? ? '' : "#"+dettaglio)
     end
 
     def not_found
-        render json: { error: 'not_found' }
+        raise msg+(dettaglio.nil? ? '' : 'not_found')
     end
-    
 
-    private
-    
+
     #con il client_id nella request chiamo auth_hub con jwe
     #e ottengo un hash_dati_cliente del tipo 
     # { "client"=>"78fds78sd",
