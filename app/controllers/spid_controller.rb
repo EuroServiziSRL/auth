@@ -436,7 +436,7 @@ class SpidController < ApplicationController
                                                         'external' => false,
                                                         'default' => true, 
                                                         'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
-                                                        'testo' => 'User Data'
+                                                        'testo' => 'Portale Servizi Comunale'
                                             } } 
         params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
         #se chiedo i metadata non passo idp
