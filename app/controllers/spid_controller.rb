@@ -18,8 +18,9 @@ class SpidController < ApplicationController
                 #ho il client_id, uso la cache se disponibile
                 result = Rails.cache.fetch("metadata_cached_#{request_params['client_id']}", expires_in: 1.weeks) do
                     unless request_params['zip'].blank?
-                        hash_dati_cliente = dati_cliente_da_jwe #chiamata interna da genera_zip_metadata
+                        hash_dati_cliente = dati_cliente_da_jwe #chiamata interna da genera_zip_metadata di auth_hub
                     else
+                        #chiamata da app esterna o dai portali
                         hash_dati_cliente = dati_cliente_da_jwt                    
                     end
                     #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
@@ -438,6 +439,24 @@ class SpidController < ApplicationController
                                                         'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
                                                         'testo' => 'Portale Servizi Comunale'
                                             } } 
+        #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
+        if hash_dati_cliente['eidas']
+            default_hash_assertion_consumer['99'] = {   'url_consumer' => '',
+                                                        'external' => false,
+                                                        'default' => false, 
+                                                        'array_campi' => ['spidCode', 'name', 'familyName', 'dateOfBirth'],
+                                                        'testo' => 'Portale Servizi Comunale'
+                                                    }
+            default_hash_assertion_consumer['100'] = { 'url_consumer' => '',
+                                                        'external' => false,
+                                                        'default' => false, 
+                                                        'array_campi' => ['spidCode', 'name', 'familyName', 'gender', 'dateOfBirth', 'placeOfBirth', 'address'],
+                                                        'testo' => 'Portale Servizi Comunale'
+                                                    }
+
+        end
+        
+        #se ci sono personalizzazioni particolari, viene inviato l'hash assertion_consumer dal portale. Altrimenti si usa quello di default                                    
         params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
         #se chiedo i metadata non passo idp
         unless hash_dati_cliente['idp'].blank?
