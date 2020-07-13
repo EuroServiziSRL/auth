@@ -440,7 +440,7 @@ class SpidController < ApplicationController
                                                         'testo' => 'Portale Servizi Comunale'
                                             } } 
         #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
-        if hash_dati_cliente['eidas']
+        if hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
             default_hash_assertion_consumer['99'] = {   'url_consumer' => '',
                                                         'external' => false,
                                                         'default' => false, 
@@ -467,7 +467,11 @@ class SpidController < ApplicationController
                 params_per_settings['idp_metadata'] = "http://localhost:8080/metadata.xml"
                 params_per_settings['idp_name_qualifier'] = "Spid Validator Locale"
             else
-                params_per_settings['destination_service_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
+                if hash_dati_cliente['eidas_pre_prod'] #cambio url per auth_request per andare su ambiente di QA
+                    params_per_settings['destination_service_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest_qa']
+                else
+                    params_per_settings['destination_service_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
+                end
                 params_per_settings['idp_sso_target_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
                 params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata']
                 params_per_settings['idp_name_qualifier'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_name_qualifier']
