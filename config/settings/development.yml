@@ -39,11 +39,9 @@ hash_gestori_spid:
     idp_name_qualifier: "Lepida S.p.A."
   eidas:
     url_authnrequest: "https://sp-proxy.eid.gov.it/spproxy/samlsso"
+    url_authnrequest_qa: "https://sp-proxy.pre.eid.gov.it/spproxy/samlsso"
     idp_metadata: "https://sp-proxy.eid.gov.it/spproxy/idpitmetadata"
-    idp_name_qualifier: "Eidas"
-  eidas_qa:
-    url_authnrequest: "https://sp-proxy.pre.eid.gov.it/spproxy/samlsso"
-    idp_metadata: "https://sp-proxy.pre.eid.gov.it/spproxy/idpitmetadata"
+    idp_metadata_qa: "https://sp-proxy.pre.eid.gov.it/spproxy/idpitmetadata"
     idp_name_qualifier: "Eidas"
   spid_validator:
     url_authnrequest: "http://localhost:8080/samlsso"

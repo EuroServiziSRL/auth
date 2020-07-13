@@ -469,8 +469,12 @@ class SpidController < ApplicationController
             else
                 if hash_dati_cliente['idp'] == "eidas" && hash_dati_cliente['eidas_pre_prod'] #cambio url per auth_request per andare su ambiente di QA
                     params_per_settings['destination_service_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest_qa']
+                    params_per_settings['idp_sso_target_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest_qa']
+                    params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata_qa']
                 else
                     params_per_settings['destination_service_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
+                    params_per_settings['idp_sso_target_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
+                    params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata']
                 end
                 params_per_settings['idp_sso_target_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
                 params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata']
