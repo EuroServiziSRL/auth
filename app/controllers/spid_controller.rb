@@ -270,10 +270,16 @@ class SpidController < ApplicationController
                 errore_autenticazione "Autenticazione non riuscita!", "Response non corrispondente alla Request inviata" if response.response_to_id != request_id_value
 
                 attributi_utente = response.attributes
-                logger.debug "\n\n Attributi utente SPID: #{attributi_utente.inspect}"
+                #logger.debug "\n\n Attributi utente SPID: #{attributi_utente.inspect}"
                     
                 errore_autenticazione "Attributi utente non presenti" if attributi_utente.blank?
-                
+
+                if hash_dati_cliente['idp'] != 'eidas'
+                    #caso 103, controllo se attributi che arrivano sono quelli richiesti.
+                    errore_autenticazione "Attributi utente diversi da quelli richiesti" unless hash_dati_cliente['hash_assertion_consumer']['0']['array_campi'].sort == response['attributi_utente'].keys.map{ |chiave| chiave.to_s }.uniq.sort
+    
+                end
+
                 resp = {}
                 resp['esito'] = 'ok'
                 resp['attributi_utente'] = attributi_utente
@@ -419,12 +425,18 @@ class SpidController < ApplicationController
             cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
             cert_temp_file.rewind
             params_per_settings['cert_path'] = cert_temp_file.path
+        else
+            #cert dato da agid per aggregatore
+            params_per_settings['cert_path'] = "#{Rails.root}/config/certs/cert.pem"
         end
         unless hash_dati_cliente['key_b64'].blank?
             key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
             key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64']))) 
             key_temp_file.rewind
             params_per_settings['private_key_path'] = key_temp_file.path
+        else
+            #chiave data da agid per aggregatore
+            params_per_settings['private_key_path'] = "#{Rails.root}/config/certs/key.pem"
         end
    
         params_per_settings['issuer'] = hash_dati_cliente['issuer']
