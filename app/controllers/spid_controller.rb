@@ -476,8 +476,6 @@ class SpidController < ApplicationController
                     params_per_settings['idp_sso_target_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
                     params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata']
                 end
-                params_per_settings['idp_sso_target_url'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['url_authnrequest']
-                params_per_settings['idp_metadata'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_metadata']
                 params_per_settings['idp_name_qualifier'] = Settings.hash_gestori_spid[hash_dati_cliente['idp']]['idp_name_qualifier']
             end
         end
