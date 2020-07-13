@@ -436,7 +436,7 @@ class SpidController < ApplicationController
         default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
                                                         'external' => false,
                                                         'default' => true, 
-                                                        'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
+                                                        'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
                                                         'testo' => 'Portale Servizi Comunale'
                                             } } 
         #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
