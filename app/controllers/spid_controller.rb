@@ -276,7 +276,7 @@ class SpidController < ApplicationController
 
                 if hash_dati_cliente['idp'] != 'eidas'
                     #caso 103, controllo se attributi che arrivano sono quelli richiesti.
-                    errore_autenticazione "Attributi utente diversi da quelli richiesti" unless hash_dati_cliente['hash_assertion_consumer']['0']['array_campi'].sort == response['attributi_utente'].keys.map{ |chiave| chiave.to_s }.uniq.sort
+                    errore_autenticazione "Attributi utente diversi da quelli richiesti" unless hash_dati_cliente['hash_assertion_consumer']['0']['array_campi'].sort == attributi_utente.keys.map{ |chiave| chiave.to_s }.uniq.sort
     
                 end
 
