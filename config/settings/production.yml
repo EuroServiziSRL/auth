@@ -52,5 +52,7 @@ hash_aggregatore:
   piva_aggregatore: '01727860221'
   cipa_aggregatore: ""
   cf_aggregatore: '03188950103'
+  email_aggregatore: 'dedagroup@legalmail.it'
+  telefono_aggregatore: '0461 997111'
 id_clienti_tracciati: ['234jh23h']
 attiva_tracciamento_clienti_indicati: true
