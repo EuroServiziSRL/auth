@@ -136,7 +136,7 @@ GEM
     rb-inotify (0.10.1)
       ffi (~> 1.0)
     ruby_dep (1.5.0)
-    spid-es (0.0.28)
+    spid-es (0.0.29)
       addressable (= 2.4.0)
       canonix (= 0.1.1)
       nokogiri (>= 1.6.7.2)
