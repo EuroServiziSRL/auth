@@ -301,7 +301,7 @@ class CieController < ApplicationController
             pk = OpenSSL::PKey::RSA.new File.read(pkey) #chiave privata
         else
             #uso cert per aggregatore
-            chiave_privata = "#{Rails.root}/config/certs/key.pem" #chiave fornita da agid
+            chiave_privata = "#{Rails.root}/config/certs/key_agid.key" #chiave fornita da agid
             pk = OpenSSL::PKey::RSA.new File.read(chiave_privata) #chiave privata
         end
         qssigned = pk.sign(digest,querystring.strip)

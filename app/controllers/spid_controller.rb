@@ -427,7 +427,7 @@ class SpidController < ApplicationController
             params_per_settings['cert_path'] = cert_temp_file.path
         else
             #cert dato da agid per aggregatore
-            params_per_settings['cert_path'] = "#{Rails.root}/config/certs/cert.pem"
+            params_per_settings['cert_path'] = "#{Rails.root}/config/certs/cert_agid.pem"
         end
         unless hash_dati_cliente['key_b64'].blank?
             key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
@@ -436,7 +436,7 @@ class SpidController < ApplicationController
             params_per_settings['private_key_path'] = key_temp_file.path
         else
             #chiave data da agid per aggregatore
-            params_per_settings['private_key_path'] = "#{Rails.root}/config/certs/key.pem"
+            params_per_settings['private_key_path'] = "#{Rails.root}/config/certs/key_agid.key"
         end
    
         params_per_settings['issuer'] = hash_dati_cliente['issuer']
@@ -571,7 +571,7 @@ class SpidController < ApplicationController
             pk = OpenSSL::PKey::RSA.new File.read(pkey) #chiave privata
         else
             #uso cert per aggregatore
-            chiave_privata = "#{Rails.root}/config/certs/key.pem" #chiave fornita da agid
+            chiave_privata = "#{Rails.root}/config/certs/key_agid.key" #chiave fornita da agid
             pk = OpenSSL::PKey::RSA.new File.read(chiave_privata) #chiave privata
         end
         qssigned = pk.sign(digest,querystring.strip)
