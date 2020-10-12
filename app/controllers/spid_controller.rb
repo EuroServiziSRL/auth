@@ -507,8 +507,8 @@ class SpidController < ApplicationController
             'vat_number' => hash_dati_cliente['p_iva_aggregato'],
             'ipa_code' => hash_dati_cliente['cod_ipa_aggregato'],
             'fiscal_code' => hash_dati_cliente['cf_aggregato'],
-            'email_address' => hash_dati_cliente['email_aggregatore'],
-            'telephone_number' => hash_dati_cliente['telefono_aggregatore']
+            'email_address' => hash_dati_cliente['email_aggregato'],
+            'telephone_number' => hash_dati_cliente['telefono_aggregato']
 
         }
         params_per_settings['hash_aggregatore'] = hash_aggregatore
