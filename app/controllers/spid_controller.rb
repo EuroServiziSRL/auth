@@ -59,11 +59,12 @@ class SpidController < ApplicationController
         if hash_dati_cliente['esito'] == 'ok'
             begin
                 Rails.cache.delete("metadata_cached_#{hash_dati_cliente['client']}")
+                render json: { 'esito' => 'ok' }
             rescue => exc
                 render json: { 'esito' => 'ko', 'msg_errore' => exc.message }
             end
         else
-            render json: hash_return, status: :unauthorized
+            render json: { 'esito' => 'ko', 'msg_errore' => "Problemi nei dati da jwe" }, status: :unauthorized
         end
     end
 
