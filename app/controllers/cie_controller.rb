@@ -320,7 +320,7 @@ class CieController < ApplicationController
             hash_settings['cert_path'] = cert_temp_file.path
         else
             #cert dato da agid per aggregatore. Metto questo cmq se non ho messo un altro cert dell'ente
-            params_per_settings['cert_path'] = "#{Rails.root}/config/certs/cert_agid.pem"
+            params_pehash_settingsr_settings['cert_path'] = "#{Rails.root}/config/certs/cert_agid.pem"
         end
         if hash_dati_cliente['aggregato'].blank? && !hash_dati_cliente['key_b64'].blank?
             key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
@@ -329,7 +329,7 @@ class CieController < ApplicationController
             hash_settings['private_key_path'] = key_temp_file.path
         else
             #chiave data da agid per aggregatore. Metto questa cmq se non ho messo un altra chiave
-            params_per_settings['private_key_path'] = "#{Rails.root}/config/certs/key_agid.key"
+            hash_settings['private_key_path'] = "#{Rails.root}/config/certs/key_agid.key"
         end
         
         hash_settings['issuer'] = hash_dati_cliente['issuer']
