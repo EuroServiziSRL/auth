@@ -70,7 +70,7 @@ class CieController < ApplicationController
                 meta = Cie::Saml::Metadata.new(saml_settings)
 
                 #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
-                pkey = hash_dati_cliente['aggregato'] ? nil : hash_parametri_settings["private_key_path"]
+                pkey = hash_parametri_settings["private_key_path"]
 
                 signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", pkey)
                 
@@ -313,22 +313,22 @@ class CieController < ApplicationController
         hash_settings = {}
         
         #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
-        unless hash_dati_cliente['cert_b64'].blank?
+        if hash_dati_cliente['aggregato'].blank? && !hash_dati_cliente['cert_b64'].blank?
             cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
             cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
             cert_temp_file.rewind
             hash_settings['cert_path'] = cert_temp_file.path
         else
-            #cert dato da agid per aggregatore
+            #cert dato da agid per aggregatore. Metto questo cmq se non ho messo un altro cert dell'ente
             params_per_settings['cert_path'] = "#{Rails.root}/config/certs/cert_agid.pem"
         end
-        unless hash_dati_cliente['key_b64'].blank?
+        if hash_dati_cliente['aggregato'].blank? && !hash_dati_cliente['key_b64'].blank?
             key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
             key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64']))) 
             key_temp_file.rewind
             hash_settings['private_key_path'] = key_temp_file.path
         else
-            #chiave data da agid per aggregatore
+            #chiave data da agid per aggregatore. Metto questa cmq se non ho messo un altra chiave
             params_per_settings['private_key_path'] = "#{Rails.root}/config/certs/key_agid.key"
         end
         
