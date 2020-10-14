@@ -318,12 +318,18 @@ class CieController < ApplicationController
             cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
             cert_temp_file.rewind
             hash_settings['cert_path'] = cert_temp_file.path
+        else
+            #cert dato da agid per aggregatore
+            params_per_settings['cert_path'] = "#{Rails.root}/config/certs/cert_agid.pem"
         end
         unless hash_dati_cliente['key_b64'].blank?
             key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
             key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64']))) 
             key_temp_file.rewind
             hash_settings['private_key_path'] = key_temp_file.path
+        else
+            #chiave data da agid per aggregatore
+            params_per_settings['private_key_path'] = "#{Rails.root}/config/certs/key_agid.key"
         end
         
         hash_settings['issuer'] = hash_dati_cliente['issuer']
