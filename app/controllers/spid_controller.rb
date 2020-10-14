@@ -86,7 +86,7 @@ class SpidController < ApplicationController
         
                 meta = Spid::Saml::Metadata.new(saml_settings)
                 #vedo se passare il cert del cliente o usare quello aggregato fornito da agid
-                pkey = hash_dati_cliente['aggregato'] ? nil : params_per_settings["private_key_path"]
+                pkey = params_per_settings["private_key_path"]
                 signature = get_signature(auth_request.uuid,auth_request.request,"http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",pkey)
 
                 #stampo la request se ho la conf abilitata per tracciare e il client_id viene messo in array id_clienti_tracciati
@@ -421,7 +421,7 @@ class SpidController < ApplicationController
     def params_per_settings(hash_dati_cliente)
         params_per_settings = {}
         #arrivano certificato e chiave in base64, uso dei tempfile (vengono puliti dal garbage_collector)
-        unless hash_dati_cliente['cert_b64'].blank?
+        if hash_dati_cliente['aggregato'].blank? && !hash_dati_cliente['cert_b64'].blank?
             cert_temp_file = Tempfile.new("temp_cert_#{hash_dati_cliente['client']}")
             cert_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['cert_b64'])))
             cert_temp_file.rewind
@@ -430,7 +430,7 @@ class SpidController < ApplicationController
             #cert dato da agid per aggregatore
             params_per_settings['cert_path'] = "#{Rails.root}/config/certs/cert_agid.pem"
         end
-        unless hash_dati_cliente['key_b64'].blank?
+        if hash_dati_cliente['aggregato'].blank? && !hash_dati_cliente['key_b64'].blank?
             key_temp_file = Tempfile.new("temp_key_#{hash_dati_cliente['client']}")
             key_temp_file.write(Zlib::Inflate.inflate(Base64.strict_decode64(hash_dati_cliente['key_b64']))) 
             key_temp_file.rewind
