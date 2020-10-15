@@ -439,7 +439,6 @@ class SpidController < ApplicationController
             #chiave data da agid per aggregatore
             params_per_settings['private_key_path'] = "#{Rails.root}/config/certs/key_agid.key"
         end
-   
         params_per_settings['issuer'] = hash_dati_cliente['issuer']
         params_per_settings['organization'] = { "org_name" => hash_dati_cliente['org_name'], 
                                                 "org_display_name" => hash_dati_cliente['org_display_name'], 
@@ -530,6 +529,7 @@ class SpidController < ApplicationController
         settings.single_logout_service_url          = params_settings['logout_url'] || portal_url+'/auth/spid/logout_service'
         settings.name_identifier_format             = ["urn:oasis:names:tc:SAML:2.0:nameid-format:transient"]
         settings.single_logout_destination          = params_settings['single_logout_destination']        
+        settings.sp_name_qualifier                  = params_settings["portal_url"] if params_settings['aggregato']
         settings.idp_name_qualifier                 = params_settings["idp_name_qualifier"]
         settings.destination_service_url            = params_settings['destination_service_url']
         settings.idp_sso_target_url                 = params_settings['idp_sso_target_url']
