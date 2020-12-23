@@ -342,7 +342,7 @@ class CieController < ApplicationController
                                                         'external' => false,
                                                         'default' => true, 
                                                         'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
-                                                        'testo' => 'Portale Servizi Comunale'
+                                                        'testo' => hash_dati_cliente['org_name']
                                             } } 
         hash_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
         hash_settings['cie'] = hash_dati_cliente['cie']

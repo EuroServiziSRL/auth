@@ -449,7 +449,7 @@ class SpidController < ApplicationController
                                                         'external' => false,
                                                         'default' => true, 
                                                         'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
-                                                        'testo' => 'Portale Servizi Comunale'
+                                                        'testo' => hash_dati_cliente['org_name']
                                             } } 
         #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
         if hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
@@ -457,13 +457,13 @@ class SpidController < ApplicationController
                                                         'external' => false,
                                                         'default' => false, 
                                                         'array_campi' => ['spidCode', 'name', 'familyName', 'dateOfBirth'],
-                                                        'testo' => 'Portale Servizi Comunale'
+                                                        'testo' => hash_dati_cliente['org_name']
                                                     }
             default_hash_assertion_consumer['100'] = { 'url_consumer' => '',
                                                         'external' => false,
                                                         'default' => false, 
                                                         'array_campi' => ['spidCode', 'name', 'familyName', 'gender', 'dateOfBirth', 'placeOfBirth', 'address'],
-                                                        'testo' => 'Portale Servizi Comunale'
+                                                        'testo' => hash_dati_cliente['org_name']
                                                     }
 
         end
