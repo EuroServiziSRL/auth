@@ -521,7 +521,7 @@ class SpidController < ApplicationController
         
         portal_url = params_settings['portal_url'] 
     
-        settings.assertion_consumer_service_url     = params_settings['assertion_consumer_url'] || portal_url+'/auth/spid/assertion_consumer'
+        settings.assertion_consumer_service_url     = params_settings['assertion_consumer_url'] || portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
         settings.sp_cert                            = params_settings['cert_path']
         #settings.sp_external_consumer_cert          = Spider.conf.get('portal.spid.sp_external_consumer_cert') #array di path di certificati di consumer esterni
