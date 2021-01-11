@@ -128,20 +128,31 @@ class SpidController < ApplicationController
             #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
             hash_dati_cliente = dati_cliente_da_jwt
             if hash_dati_cliente['esito'] == 'ok'
-                #istante di ricezione della response
-                ricezione_response_datetime = (Time.now.utc).to_datetime #formato utc
-                
-                #preparo i params per creare i settings
-                params_per_settings = params_per_settings(hash_dati_cliente)
-                settings = get_saml_settings(params_per_settings)
                 saml_response = request_params[:assertion]
                 #creo un oggetto response
                 response = Spid::Saml::Response.new(saml_response)
+                #ricavo idp da response e setto in hash_dati_cliente['idp']
+                hash_dati_cliente['idp'] = get_idp_from_mappatura_issuer(response.issuer)
+                # #istante di ricezione della response 
+                ricezione_response_datetime = (Time.now.utc).to_datetime #formato utc
+                #preparo i params per creare i settings
+                params_per_settings = params_per_settings(hash_dati_cliente)
+                settings = get_saml_settings(params_per_settings)
+                
                 if response.assertion_present?
-                    #ricevo issue istant
-                    issue_instant_req = request_params[:issue_instant]
+                    #ricavo issue istant della request dal campo authninstant della response
+                    issue_instant_req = response.assertion_authninstant
                     unless issue_instant_req.blank? #in fase di test si deve fare la login ogni volta per gli issue istant
-                        issue_instant_req_datetime = DateTime.strptime(issue_instant_req, "%Y-%m-%dT%H:%M:%SZ")
+                        begin
+                            issue_instant_req_datetime = DateTime.strptime(issue_instant_req.to_s, "%Y-%m-%dT%H:%M:%SZ")
+                        rescue => exc
+                            #provo a fare strptime con millisecondi
+                            begin
+                                issue_instant_req_datetime = DateTime.strptime(issue_instant_req.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
+                            rescue => exc2
+                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' issue istant della request anche con millisecondi" #caso 110
+                            end
+                        end
                         issue_instant_resp = response.issue_instant
                         begin
                             issue_instant_resp_datetime = DateTime.strptime(issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%SZ")
@@ -150,7 +161,7 @@ class SpidController < ApplicationController
                             begin
                                 issue_instant_resp_datetime = DateTime.strptime(issue_instant_resp.to_s, "%Y-%m-%dT%H:%M:%S.%LZ")
                             rescue => exc2
-                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' issue istant anche con millisecondi" #caso 110
+                                errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' issue istant della response anche con millisecondi" #caso 110
                             end
                         end
                         assertion_issue_instant_resp = response.assertion_issue_instant
@@ -189,7 +200,7 @@ class SpidController < ApplicationController
                                 errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell' assertion_subject_confirmation_data_not_on_or_after anche con millisecondi" 
                             end
                         end
-                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: not_on_or_after_datetime < ricezione_response_datetime" if not_on_or_after_datetime < ricezione_response_datetime
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: not_on_or_after_datetime #{not_on_or_after_datetime} < ricezione_response_datetime #{ricezione_response_datetime}" if not_on_or_after_datetime < ricezione_response_datetime
                     end
                         
                     #controllo se Attributo NotBefore di Condition successivo all'instante di ricezione della response, caso 78
@@ -266,8 +277,9 @@ class SpidController < ApplicationController
                     errore_autenticazione "Autenticazione non riuscita!", exc_val.message 
                 end    
 
-                #controllo se id in request == a id della response
-                request_id_value = request_params[:request_id]
+                #controllo se id in request uguale all' id della response. Ricavo id della request col campo InResponseTo della response
+                request_id_value = response.response_to_id    
+                #request_id_value = request_params[:request_id]#vecchio metodo con uso della sessione
                 errore_autenticazione "Autenticazione non riuscita!", "Response non corrispondente alla Request inviata" if response.response_to_id != request_id_value
 
                 attributi_utente = response.attributes
@@ -283,16 +295,20 @@ class SpidController < ApplicationController
 
                 resp = {}
                 resp['esito'] = 'ok'
+                resp['provider_id'] = hash_dati_cliente['idp']
                 resp['attributi_utente'] = attributi_utente
             else
                 #se esito non ok, ripasso direttamente l'hash con l'errore
                 resp = hash_dati_cliente
+                resp['provider_id'] = hash_dati_cliente['idp']
+                resp
             end 
         rescue => exception
             logger.error exception.message
             logger.error exception.backtrace.join("\n") 
             resp = {}
             resp['esito'] = 'ko'
+            resp['provider_id'] = hash_dati_cliente['idp']
             resp['msg_errore'], resp['dettaglio_log_errore'] = exception.message.split("#")
         ensure
             #estraggo dal Base64 l'xml
@@ -320,6 +336,41 @@ class SpidController < ApplicationController
 
     private
     
+    def get_idp_from_mappatura_issuer(issuer)
+        case issuer
+        when 'https://posteid.poste.it'
+            'poste'
+        when 'https://loginspid.aruba.it'
+            'arubaid'
+        when 'https://spid.intesa.it'
+            'intesa'
+        when 'https://identity.infocert.it'
+            'infocert'
+        when 'https://id.lepida.it/idp/shibboleth'
+            'lepida'
+        when 'https://idp.namirialtsp.com/idp'
+            'namirialid'
+        when 'https://spid.register.it'
+            'spiditalia'
+        when 'https://identity.sieltecloud.it'
+            'sielte'
+        when 'https://login.id.tim.it/affwebservices/public/saml2sso'
+            'tim'
+        when 'https://sp-proxy.eid.gov.it/spproxy/idpit' #eidas
+            'eidas'
+        when 'https://validator.spid.gov.it'
+            'spid_validator'
+        when 'https://validator.spid.gov.it'
+            'spid_validator'
+        when 'http://localhost:8080' #test locale
+            'spid_validator'
+        else #nessun idp!
+            nil
+        end
+    end
+
+
+
     def errore_autenticazione(msg,dettaglio=nil)
         raise msg+(dettaglio.nil? ? '' : "#"+dettaglio)
     end
@@ -377,7 +428,7 @@ class SpidController < ApplicationController
                         #ripasso le info arrivate dal portale se ci sono
                         hash_dati_cliente['hash_assertion_consumer'] = jwt_token_decoded['hash_assertion_consumer'] unless jwt_token_decoded['hash_assertion_consumer'].blank?
                         hash_dati_cliente['test'] = jwt_token_decoded['test'] unless jwt_token_decoded['test'].blank?
-                        #scelta idp
+                        #scelta idp con dati in sessione -> TO-DO: da rimuovere!
                         hash_dati_cliente['client_id'] = request_params['client_id']
                         hash_dati_cliente['idp'] = request_params['idp']
                         hash_dati_cliente['esito'] = 'ok'
