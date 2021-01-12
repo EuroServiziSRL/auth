@@ -175,12 +175,15 @@ class SpidController < ApplicationController
                                 errore_autenticazione "Autenticazione non riuscita!", "Problemi nella conversione dell'issue istant dell'assertion anche con millisecondi" #caso 110
                             end
                         end
-                        
-                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime > issue_instant_resp_datetime" if issue_instant_req_datetime > issue_instant_resp_datetime #caso spid valid 14
-                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_resp_datetime.to_date != Date.today" if issue_instant_resp_datetime.to_date != Date.today #caso spid valid 15
+                        #FIX per spiditalia (register) che usa authinstant anche > issueistant della response...tolgo 1 secondo per i millesimi
+                        if hash_dati_cliente['idp'] == "spiditalia"
+                            issue_instant_req_datetime = issue_instant_req_datetime-(1.0/86400)
+                        end
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime #{issue_instant_req_datetime} > issue_instant_resp_datetime #{issue_instant_resp_datetime} con provider #{hash_dati_cliente['idp']}" if issue_instant_req_datetime > issue_instant_resp_datetime #caso spid valid 14
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_resp_datetime.to_date != Date.today con provider #{hash_dati_cliente['idp']}" if issue_instant_resp_datetime.to_date != Date.today #caso spid valid 15
                         #asserzioni
-                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime > assertion_issue_instant_resp_datetime" if issue_instant_req_datetime > assertion_issue_instant_resp_datetime #caso spid valid 39
-                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: assertion_issue_instant_resp_datetime.to_date != Date.today" if assertion_issue_instant_resp_datetime.to_date != Date.today #caso spid valid 40
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime #{issue_instant_req_datetime} > assertion_issue_instant_resp_datetime #{assertion_issue_instant_resp_datetime} con provider #{hash_dati_cliente['idp']}" if issue_instant_req_datetime > assertion_issue_instant_resp_datetime #caso spid valid 39
+                        errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: assertion_issue_instant_resp_datetime.to_date != Date.today con provider #{hash_dati_cliente['idp']}" if assertion_issue_instant_resp_datetime.to_date != Date.today #caso spid valid 40
                     end
 
                     
