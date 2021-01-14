@@ -176,7 +176,7 @@ class SpidController < ApplicationController
                             end
                         end
                         #FIX per spiditalia (register) che usa authinstant anche > issueistant della response...tolgo 1 secondo per i millesimi
-                        if hash_dati_cliente['idp'] == "spiditalia"
+                        if ['spiditalia','eidas','cie'].include?(hash_dati_cliente['idp'])
                             issue_instant_req_datetime = issue_instant_req_datetime-(1.0/86400)
                         end
                         errore_autenticazione "Autenticazione non riuscita!", "Problemi istanti di tempo: issue_instant_req_datetime #{issue_instant_req_datetime} > issue_instant_resp_datetime #{issue_instant_resp_datetime} con provider #{hash_dati_cliente['idp']}" if issue_instant_req_datetime > issue_instant_resp_datetime #caso spid valid 14
