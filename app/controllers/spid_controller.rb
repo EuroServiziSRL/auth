@@ -361,6 +361,8 @@ class SpidController < ApplicationController
             'tim'
         when 'https://sp-proxy.eid.gov.it/spproxy/idpit' #eidas
             'eidas'
+        when 'https://sp-proxy.pre.eid.gov.it/spproxy/idpit' #eidas
+            'eidas'
         when 'https://validator.spid.gov.it'
             'spid_validator'
         when 'https://validator.spid.gov.it'
