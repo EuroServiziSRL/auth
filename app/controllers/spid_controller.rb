@@ -95,7 +95,6 @@ class SpidController < ApplicationController
                     logger.debug "\n\n REQUEST PER *#{hash_dati_cliente['org_name']}*:\n #{auth_request.request} \n" 
                     logger.debug "\n\n SIGNATURE PER *#{hash_dati_cliente['org_name']}*:\n #{signature} \n" 
                 end
-
                 sso_request = meta.create_sso_request( auth_request.request, {  :RelayState   => request.uuid,
                                                                                 :SigAlg       => "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
                                                                                 :Signature    => signature } )
@@ -576,8 +575,8 @@ class SpidController < ApplicationController
             params_per_settings['attribute_consuming_service_index'] = 100
         else
             #Setto in base al client che mi arriva il suo index
-            params_per_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer']
-            params_per_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer']
+            params_per_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer'].blank? ? 0 : hash_dati_cliente['index_consumer'] 
+            params_per_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer'].blank? ? 0 : hash_dati_cliente['index_consumer']
         end
         params_per_settings['aggregato'] = hash_dati_cliente['aggregato']
         #info aggregatore e aggregato
