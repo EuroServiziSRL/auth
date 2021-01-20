@@ -23,6 +23,7 @@ class SpidController < ApplicationController
                         #chiamata da app esterna o dai portali
                         hash_dati_cliente = dati_cliente_da_jwt                    
                     end
+                    
                     #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
                     if hash_dati_cliente['esito'] == 'ok'
                         #preparo i params per creare i settings
@@ -380,7 +381,7 @@ class SpidController < ApplicationController
         raise msg+(dettaglio.nil? ? '' : "#"+dettaglio)
     end
 
-    #arriva un hash_dati_cliente del tipo 
+    #arriva un hash_dati_cliente da app esterna o da portali del tipo 
     # { "client"=>"78fds78sd",
     #    "secret"=>"dv87s86df8vd8v8vdhvtvehal4545sjkljb",
     #     "url_app_ext"=>"",
@@ -500,13 +501,31 @@ class SpidController < ApplicationController
                                                 "org_display_name" => hash_dati_cliente['org_display_name'], 
                                                 "org_url" => hash_dati_cliente['org_url'] }
         params_per_settings['portal_url'] = hash_dati_cliente['org_url']
+        #se ho clienti con stesso ipa creo hash_assertion_consumer dinamico in base a hash_clienti_stesso_ipa
+        unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
+            default_hash_assertion_consumer = {}
+            hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
+                default_hash_assertion_consumer[dati_assertion_consumer['index_assertion_consumer']] = {
+                    'url_consumer' => dati_assertion_consumer['url_assertion_consumer'],
+                    'external' => dati_assertion_consumer['external'],
+                    'default' => dati_assertion_consumer['default'], 
+                    'array_campi' => dati_assertion_consumer['campi_richiesti'],
+                    'testo' => dati_assertion_consumer['testo'] 
+                }
+            
+            }
+
+        else #hash_assertion_consumer di default con indice 0
+            default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
+                'external' => false,
+                'default' => true, 
+                'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
+                'testo' => hash_dati_cliente['org_name']
+            } } 
+        end
+
+
         
-        default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
-                                                        'external' => false,
-                                                        'default' => true, 
-                                                        'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
-                                                        'testo' => hash_dati_cliente['org_name']
-                                            } } 
         #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
         if hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
             default_hash_assertion_consumer['99'] = {   'url_consumer' => '',
@@ -523,9 +542,13 @@ class SpidController < ApplicationController
                                                     }
 
         end
-        
-        #se ci sono personalizzazioni particolari, viene inviato l'hash assertion_consumer dal portale. Altrimenti si usa quello di default                                    
-        params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
+        unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
+            params_per_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
+        else
+            #se ci sono personalizzazioni particolari, viene inviato l'hash assertion_consumer dal portale. Altrimenti si usa quello di default                                    
+            params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
+        #
+        end
         #se chiedo i metadata non passo idp
         unless hash_dati_cliente['idp'].blank?
             #se sto usando spid_validator e sono con pre_prod allora attivo lo spid_validator in locale
@@ -552,8 +575,9 @@ class SpidController < ApplicationController
             params_per_settings['assertion_consumer_service_index'] = 100
             params_per_settings['attribute_consuming_service_index'] = 100
         else
-            params_per_settings['assertion_consumer_service_index'] = 0
-            params_per_settings['attribute_consuming_service_index'] = 0
+            #Setto in base al client che mi arriva il suo index
+            params_per_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer']
+            params_per_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer']
         end
         params_per_settings['aggregato'] = hash_dati_cliente['aggregato']
         #info aggregatore e aggregato
