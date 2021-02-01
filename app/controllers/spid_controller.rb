@@ -292,7 +292,7 @@ class SpidController < ApplicationController
 
                 if hash_dati_cliente['idp'] != 'eidas'
                     #caso 103, controllo se attributi che arrivano sono quelli richiesti.
-                    errore_autenticazione "Attributi utente diversi da quelli richiesti" unless hash_dati_cliente['hash_assertion_consumer'][hash_dati_cliente['index_consumer']]['array_campi'].sort == attributi_utente.keys.map{ |chiave| chiave.to_s }.uniq.sort
+                    errore_autenticazione "Attributi utente diversi da quelli richiesti" unless hash_dati_cliente['hash_assertion_consumer'][hash_dati_cliente['index_consumer'].to_s]['array_campi'].sort == attributi_utente.keys.map{ |chiave| chiave.to_s }.uniq.sort
     
                 end
 
@@ -601,7 +601,7 @@ class SpidController < ApplicationController
         
         portal_url = params_settings['portal_url'] 
     
-        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer'][params_settings['assertion_consumer_service_index']]['url_consumer']
+        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer'][params_settings['assertion_consumer_service_index'].to_s]['url_consumer']
         settings.assertion_consumer_service_url     ||= portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
         settings.sp_cert                            = params_settings['cert_path']
