@@ -292,7 +292,7 @@ class SpidController < ApplicationController
 
                 if hash_dati_cliente['idp'] != 'eidas'
                     #caso 103, controllo se attributi che arrivano sono quelli richiesti.
-                    errore_autenticazione "Attributi utente diversi da quelli richiesti" unless hash_dati_cliente['hash_assertion_consumer']['0']['array_campi'].sort == attributi_utente.keys.map{ |chiave| chiave.to_s }.uniq.sort
+                    errore_autenticazione "Attributi utente diversi da quelli richiesti" unless hash_dati_cliente['hash_assertion_consumer']['index_consumer']['array_campi'].sort == attributi_utente.keys.map{ |chiave| chiave.to_s }.uniq.sort
     
                 end
 
@@ -505,7 +505,7 @@ class SpidController < ApplicationController
             default_hash_assertion_consumer = {}
             hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
                 default_hash_assertion_consumer[dati_assertion_consumer['index_assertion_consumer']] = {
-                    'url_consumer' => dati_assertion_consumer['url_assertion_consumer'],
+                    'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer']),
                     'external' => dati_assertion_consumer['external'],
                     'default' => dati_assertion_consumer['default'], 
                     'array_campi' => dati_assertion_consumer['campi_richiesti'],
@@ -515,7 +515,8 @@ class SpidController < ApplicationController
             }
 
         else #hash_assertion_consumer di default con indice 0
-            default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
+            default_hash_assertion_consumer = {   "0" => {  
+                'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
                 'external' => false,
                 'default' => true, 
                 'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
@@ -527,13 +528,13 @@ class SpidController < ApplicationController
         
         #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
         if hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
-            default_hash_assertion_consumer['99'] = {   'url_consumer' => '',
+            default_hash_assertion_consumer['99'] = {   'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
                                                         'external' => false,
                                                         'default' => false, 
                                                         'array_campi' => ['spidCode', 'name', 'familyName', 'dateOfBirth'],
                                                         'testo' => hash_dati_cliente['org_name']
                                                     }
-            default_hash_assertion_consumer['100'] = { 'url_consumer' => '',
+            default_hash_assertion_consumer['100'] = {  'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
                                                         'external' => false,
                                                         'default' => false, 
                                                         'array_campi' => ['spidCode', 'name', 'familyName', 'gender', 'dateOfBirth', 'placeOfBirth', 'address'],
@@ -600,7 +601,8 @@ class SpidController < ApplicationController
         
         portal_url = params_settings['portal_url'] 
     
-        settings.assertion_consumer_service_url     = params_settings['assertion_consumer_url'] || portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
+        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer']['assertion_consumer_service_index']['url_consumer']
+        settings.assertion_consumer_service_url     ||= portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
         settings.sp_cert                            = params_settings['cert_path']
         #settings.sp_external_consumer_cert          = Spider.conf.get('portal.spid.sp_external_consumer_cert') #array di path di certificati di consumer esterni
@@ -622,10 +624,12 @@ class SpidController < ApplicationController
         settings.attribute_consuming_service_index  = params_settings['attribute_consuming_service_index']
         #ho degli hash identificati dagli indici degli AssertionConsumerService tags nei metadata. Costruisco AssertionConsumerService e AttributeConsumingService
         settings.hash_assertion_consumer            = params_settings['hash_assertion_consumer']
-        #se il campo settings.hash_assertion_consumer[indiceN][url_consumer] è vuoto, uso settings.assertion_consumer_service_url
-        settings.hash_assertion_consumer.each_pair{ |index,hash_service|
-            hash_service['url_consumer'] = settings.assertion_consumer_service_url if hash_service['url_consumer'].blank?
-        }
+        #NON DOVREBBE SERVIRE..
+        # #se il campo settings.hash_assertion_consumer[indiceN][url_consumer] è vuoto, uso settings.assertion_consumer_service_url
+        # settings.hash_assertion_consumer.each_pair{ |index,hash_service|
+        #     hash_service['url_consumer'] = settings.assertion_consumer_service_url if hash_service['url_consumer'].blank?
+        # }
+
         settings.aggregato                          = params_settings['aggregato']
         settings.hash_aggregatore                   = params_settings['hash_aggregatore']
         settings
