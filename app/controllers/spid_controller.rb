@@ -504,7 +504,7 @@ class SpidController < ApplicationController
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
             default_hash_assertion_consumer = {}
             hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
-                default_hash_assertion_consumer[dati_assertion_consumer['index_assertion_consumer']] = {
+                default_hash_assertion_consumer[(dati_assertion_consumer['index_assertion_consumer']).to_s] = {
                     'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer']),
                     'external' => dati_assertion_consumer['external'],
                     'default' => dati_assertion_consumer['default'], 
