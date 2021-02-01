@@ -601,7 +601,7 @@ class SpidController < ApplicationController
         
         portal_url = params_settings['portal_url'] 
     
-        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer']['assertion_consumer_service_index']['url_consumer']
+        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer'][params_settings['assertion_consumer_service_index']]['url_consumer']
         settings.assertion_consumer_service_url     ||= portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
         settings.sp_cert                            = params_settings['cert_path']
