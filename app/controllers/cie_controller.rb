@@ -346,7 +346,7 @@ class CieController < ApplicationController
                     'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer'] ),
                     'external' => dati_assertion_consumer['external'],
                     'default' => dati_assertion_consumer['default'], 
-                    'array_campi' => dati_assertion_consumer['campi_richiesti'],
+                    'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
                     'testo' => dati_assertion_consumer['testo'] 
                 }
             
