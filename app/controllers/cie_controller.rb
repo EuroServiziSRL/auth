@@ -339,9 +339,12 @@ class CieController < ApplicationController
         hash_settings['portal_url'] = hash_dati_cliente['org_url']     
         
         #se ho clienti con stesso ipa creo hash_assertion_consumer dinamico in base a hash_clienti_stesso_ipa
+        cliente_esterno = false
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
             default_hash_assertion_consumer = {}
             hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
+                #se integrazione con cliente esterno setto questa variabile
+                cliente_esterno = true if dati_assertion_consumer['external']
                 default_hash_assertion_consumer['0'] = {
                     'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer'] ),
                     'external' => dati_assertion_consumer['external'],
@@ -369,6 +372,9 @@ class CieController < ApplicationController
         #
         end
         
+        #aggiungo url logout
+        hash_settings['single_logout_destination'] = hash_dati_cliente['url_app_ext']+'/logout' if cliente_esterno
+
         hash_settings['cie'] = hash_dati_cliente['cie']
         hash_settings['cie_pre_prod'] = hash_dati_cliente['cie_pre_prod']
         hash_settings
