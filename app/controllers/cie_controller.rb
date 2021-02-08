@@ -338,13 +338,47 @@ class CieController < ApplicationController
                                                 "org_url" => hash_dati_cliente['org_url'] }
         hash_settings['portal_url'] = hash_dati_cliente['org_url']
         
-        default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
+
+        #default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
                                                         'external' => false,
                                                         'default' => true, 
                                                         'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
                                                         'testo' => hash_dati_cliente['org_name']
                                             } } 
-        hash_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
+        #hash_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
+        
+        
+        #se ho clienti con stesso ipa creo hash_assertion_consumer dinamico in base a hash_clienti_stesso_ipa
+        unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
+            default_hash_assertion_consumer = {}
+            hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
+                default_hash_assertion_consumer['0'] = {
+                    'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer']),
+                    'external' => dati_assertion_consumer['external'],
+                    'default' => dati_assertion_consumer['default'], 
+                    'array_campi' => dati_assertion_consumer['campi_richiesti'],
+                    'testo' => dati_assertion_consumer['testo'] 
+                }
+            
+            }
+
+        else #hash_assertion_consumer di default con indice 0
+            default_hash_assertion_consumer = {   "0" => {  
+                'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer',
+                'external' => false,
+                'default' => true, 
+                'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
+                'testo' => hash_dati_cliente['org_name']
+            } } 
+        end
+        unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
+            params_per_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
+        else
+            #se ci sono personalizzazioni particolari, viene inviato l'hash assertion_consumer dal portale. Altrimenti si usa quello di default                                    
+            params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
+        #
+        end
+        
         hash_settings['cie'] = hash_dati_cliente['cie']
         hash_settings['cie_pre_prod'] = hash_dati_cliente['cie_pre_prod']
         hash_settings
@@ -357,7 +391,8 @@ class CieController < ApplicationController
         logger.debug "\n\n PARAMETRI PER SETTINGS #{params_settings.inspect}"
         
         settings = Cie::Saml::Settings.new
-        settings.assertion_consumer_service_url     = params_settings['assertion_consumer_url'] || portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer'
+        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer']['0']['url_consumer']
+        settings.assertion_consumer_service_url     ||= portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
         settings.sp_cert                            = params_settings['cert_path']
         #settings.sp_external_consumer_cert          = Spider.conf.get('portal.spid.sp_external_consumer_cert') #array di path di certificati di consumer esterni
