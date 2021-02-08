@@ -336,24 +336,14 @@ class CieController < ApplicationController
         hash_settings['organization'] = { "org_name" => hash_dati_cliente['org_name'], 
                                                 "org_display_name" => hash_dati_cliente['org_display_name'], 
                                                 "org_url" => hash_dati_cliente['org_url'] }
-        hash_settings['portal_url'] = hash_dati_cliente['org_url']
-        
-
-        #default_hash_assertion_consumer = {   "0" => {  'url_consumer' => '',
-                                                        'external' => false,
-                                                        'default' => true, 
-                                                        'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
-                                                        'testo' => hash_dati_cliente['org_name']
-                                            } } 
-        #hash_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
-        
+        hash_settings['portal_url'] = hash_dati_cliente['org_url']     
         
         #se ho clienti con stesso ipa creo hash_assertion_consumer dinamico in base a hash_clienti_stesso_ipa
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
             default_hash_assertion_consumer = {}
             hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
                 default_hash_assertion_consumer['0'] = {
-                    'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer']),
+                    'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer'] ),
                     'external' => dati_assertion_consumer['external'],
                     'default' => dati_assertion_consumer['default'], 
                     'array_campi' => dati_assertion_consumer['campi_richiesti'],
