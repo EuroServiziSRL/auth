@@ -545,9 +545,10 @@ class SpidController < ApplicationController
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
             params_per_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
         else
-            #se ci sono personalizzazioni particolari, viene inviato l'hash assertion_consumer dal portale. Altrimenti si usa quello di default                                    
-            params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
-        #
+            # #se ci sono personalizzazioni particolari, viene inviato l'hash assertion_consumer dal portale. Altrimenti si usa quello di default                                    
+            # params_per_settings['hash_assertion_consumer'] = (hash_dati_cliente['hash_assertion_consumer'].blank? ? default_hash_assertion_consumer : hash_dati_cliente['hash_assertion_consumer'] )
+            #USO SEMPRE LE CONF SU START, NON INVIO HASH DA PORTALI!
+            params_per_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
         end
         #se chiedo i metadata non passo idp
         unless hash_dati_cliente['idp'].blank?
