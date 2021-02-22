@@ -19,7 +19,7 @@ hash_gestori_spid:
     idp_name_qualifier: "Infocert S.p.A."
   poste:
     url_authnrequest: "https://posteid.poste.it/jod-fs/ssoserviceredirect"
-    idp_metadata: "http://posteid.poste.it/jod-fs/metadata/metadata.xml"
+    idp_metadata: "https://posteid.poste.it/jod-fs/metadata/metadata.xml"
     idp_name_qualifier: "Poste Italiane S.p.A." 
   sielte:
     url_authnrequest: "https://identity.sieltecloud.it/simplesaml/saml2/idp/SSO.php"

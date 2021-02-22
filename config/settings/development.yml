@@ -19,7 +19,7 @@ hash_gestori_spid:
     idp_name_qualifier: "Infocert S.p.A."
   poste:
     url_authnrequest: "https://posteid.poste.it/jod-fs/ssoserviceredirect"
-    idp_metadata: "http://posteid.poste.it/jod-fs/metadata/metadata.xml"
+    idp_metadata: "https://posteid.poste.it/jod-fs/metadata/metadata.xml"
     idp_name_qualifier: "Poste Italiane S.p.A." 
   sielte:
     url_authnrequest: "https://identity.sieltecloud.it/simplesaml/saml2/idp/SSO.php"
@@ -55,6 +55,6 @@ hash_aggregatore:
   email_aggregatore: 'dedagroup@legalmail.it'
   telefono_aggregatore: '0461 997111'
 #id_clienti_tracciati: ['234jh23h']
-id_clienti_tracciati: ['78fds78sd00']
+id_clienti_tracciati: ['jsbhdg7d ']
 attiva_tracciamento_clienti_indicati: true
   
