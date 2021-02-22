@@ -49,10 +49,10 @@ hash_gestori_spid:
     idp_name_qualifier: "Spid Validator"
 hash_aggregatore:
   soggetto_aggregatore: 'Dedagroup Public Services s.r.l.'
-  piva_aggregatore: '01727860221'
+  piva_aggregatore: 'IT01727860221'
   cipa_aggregatore: ""
   cf_aggregatore: '03188950103'
   email_aggregatore: 'dedagroup@legalmail.it'
-  telefono_aggregatore: '0461 997111'
+  telefono_aggregatore: '+390461997111'
 id_clienti_tracciati: ['234jh23h']
 attiva_tracciamento_clienti_indicati: true
