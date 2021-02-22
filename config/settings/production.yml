@@ -1,4 +1,4 @@
-url_auth_hub: 'https://startdev.soluzionipa.it/auth_hub/'
+url_auth_hub: 'https://start.soluzionipa.it/auth_hub/'
 path_pkey_es: '/etc/httpd/certs/soluzionipa/soluzionipa.key'
 hash_gestori_spid: 
   namirialid:
