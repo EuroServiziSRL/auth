@@ -577,8 +577,8 @@ class SpidController < ApplicationController
             params_per_settings['attribute_consuming_service_index'] = 100
         else
             #Setto in base al client che mi arriva il suo index
-            params_per_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer'].blank? ? 0 : hash_dati_cliente['index_consumer'] 
-            params_per_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer'].blank? ? 0 : hash_dati_cliente['index_consumer']
+            params_per_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer'] 
+            params_per_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer']
         end
         params_per_settings['aggregato'] = hash_dati_cliente['aggregato']
         #info aggregatore e aggregato
