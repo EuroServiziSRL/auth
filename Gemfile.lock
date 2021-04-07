@@ -34,7 +34,7 @@ GEM
     builder (3.2.4)
     byebug (11.1.3)
     canonix (0.1.1)
-    cie-es (0.0.8)
+    cie-es (0.0.9)
       canonix (= 0.1.1)
       uuid (~> 2.3)
     concurrent-ruby (1.1.6)
