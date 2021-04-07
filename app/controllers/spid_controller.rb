@@ -10,31 +10,86 @@ class SpidController < ApplicationController
     include Spid::Saml::Coding
     CHIAVE = Rails.application.credentials.external_auth_api_key #usare per jwt e jwe con altre app rails es
 
+    ##VECCHIO METODO CHE VA SUBITO IN CACHE SENZA CONTROLLARE JWT
+    # #GET get_metadata
+    # def get_metadata
+    #     begin
+    #         unless request_params['client_id'].blank?
+    #             #ho il client_id, uso la cache se disponibile
+    #             result = Rails.cache.fetch("metadata_cached_#{request_params['client_id']}", expires_in: 1.weeks) do
+                   
+    #                 unless request_params['zip'].blank?
+    #                     hash_dati_cliente = dati_cliente_da_jwe #chiamata interna da genera_zip_metadata di auth_hub
+    #                 else
+    #                     #chiamata da app esterna o dai portali
+    #                     hash_dati_cliente = dati_cliente_da_jwt                    
+    #                 end
+    #                 #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
+    #                 if hash_dati_cliente['esito'] == 'ok'
+    #                     #preparo i params per creare i settings
+    #                     params_per_settings = params_per_settings(hash_dati_cliente)
+    #                     saml_settings = get_saml_settings(params_per_settings)
+    #                     meta = Spid::Saml::Metadata.new
+    #                     { 'esito' => 'ok', 'metadata' => meta.generate(saml_settings) }
+    #                 else
+    #                     #se esito non ok, ripasso direttamente l'hash con l'errore
+    #                     hash_dati_cliente
+    #                 end  
+    #             end
+    #             if result['esito'] == 'ko'                
+    #                 Rails.cache.delete("metadata_cached_#{request_params['client_id']}")
+    #             end
+    #         else
+    #             result = {'esito' => 'ko', 'msg_errore' => 'Client mancante' }
+    #         end
+    #     rescue => exception
+    #         logger.error exception.message
+    #         logger.error exception.backtrace.join("\n") 
+    #         result = {}
+    #         result['esito'] = 'ko'
+    #         result['msg_errore'] = exception.message
+    #     ensure
+    #         render json: result
+    #     end
+        
+    # end
 
     #GET get_metadata
     def get_metadata
         begin
             unless request_params['client_id'].blank?
-                #ho il client_id, uso la cache se disponibile
-                result = Rails.cache.fetch("metadata_cached_#{request_params['client_id']}", expires_in: 1.weeks) do
-                    unless request_params['zip'].blank?
+                unless request_params['zip'].blank? #chiamata interna, cerco subito in cache
+                    result = Rails.cache.fetch("metadata_cached_#{request_params['client_id']}", expires_in: 1.weeks) do
+                        #se non trovo in cache creo il metadata dal jwe
                         hash_dati_cliente = dati_cliente_da_jwe #chiamata interna da genera_zip_metadata di auth_hub
-                    else
-                        #chiamata da app esterna o dai portali
-                        hash_dati_cliente = dati_cliente_da_jwt                    
+                        if hash_dati_cliente['esito'] == 'ok'
+                            #preparo i params per creare i settings
+                            params_per_settings = params_per_settings(hash_dati_cliente)
+                            saml_settings = get_saml_settings(params_per_settings)
+                            meta = Spid::Saml::Metadata.new
+                            { 'esito' => 'ok', 'metadata' => meta.generate(saml_settings) }
+                        else
+                            #se esito non ok, ripasso direttamente l'hash con l'errore
+                            hash_dati_cliente
+                        end  
                     end
-                    
-                    #ottengo i dati del cliente, cert e chiave e varie conf passate da portale/app esterna.
+                else
+                    #chiamata da app esterna o dai portali, devo controllare il jwt
+                    hash_dati_cliente = dati_cliente_da_jwt 
                     if hash_dati_cliente['esito'] == 'ok'
-                        #preparo i params per creare i settings
-                        params_per_settings = params_per_settings(hash_dati_cliente)
-                        saml_settings = get_saml_settings(params_per_settings)
-                        meta = Spid::Saml::Metadata.new
-                        { 'esito' => 'ok', 'metadata' => meta.generate(saml_settings) }
+                        #verificato il jwt, cerco in cache
+                        result = Rails.cache.fetch("metadata_cached_#{request_params['client_id']}", expires_in: 1.weeks) do
+                            #preparo i params per creare i settings
+                            params_per_settings = params_per_settings(hash_dati_cliente)
+                            saml_settings = get_saml_settings(params_per_settings)
+                            meta = Spid::Saml::Metadata.new
+                            { 'esito' => 'ok', 'metadata' => meta.generate(saml_settings) }
+                        end
                     else
                         #se esito non ok, ripasso direttamente l'hash con l'errore
-                        hash_dati_cliente
+                        result = hash_dati_cliente
                     end  
+                    
                 end
                 if result['esito'] == 'ko'                
                     Rails.cache.delete("metadata_cached_#{request_params['client_id']}")
@@ -53,6 +108,11 @@ class SpidController < ApplicationController
         end
         
     end
+
+
+
+
+
 
     #GET aggiorna_cache_metadata Arriva nel jwe il client_id, cancello dalla cache i metadata
     def aggiorna_cache_metadata
@@ -515,27 +575,40 @@ class SpidController < ApplicationController
             }
 
         else #hash_assertion_consumer di default con indice 0
-            default_hash_assertion_consumer = {   "0" => {  
-                'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
-                'external' => false,
-                'default' => true, 
-                'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
-                'testo' => hash_dati_cliente['org_name']
-            } } 
+            if hash_dati_cliente['spid'] || hash_dati_cliente['spid_pre_prod']
+                default_hash_assertion_consumer = {   "0" => {  
+                    'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
+                    'external' => false,
+                    'default' => true, 
+                    'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
+                    'testo' => hash_dati_cliente['org_name']
+                } } 
+            else
+                default_hash_assertion_consumer = {}
+            end
         end
 
 
         
         #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
         if hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
-            default_hash_assertion_consumer['99'] = {   'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
-                                                        'external' => false,
+            #controllo inoltre se ho un app esterna
+            if hash_dati_cliente['app_ext']
+                eidas_url_consumer = hash_dati_cliente['url_ass_cons_ext']
+                eidas_external = true
+            else
+                eidas_url_consumer = hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
+                eidas_external = false
+            end
+            
+            default_hash_assertion_consumer['99'] = {   'url_consumer' => eidas_url_consumer,
+                                                        'external' => eidas_external,
                                                         'default' => false, 
                                                         'array_campi' => ['spidCode', 'name', 'familyName', 'dateOfBirth'],
                                                         'testo' => hash_dati_cliente['org_name']
                                                     }
-            default_hash_assertion_consumer['100'] = {  'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
-                                                        'external' => false,
+            default_hash_assertion_consumer['100'] = {  'url_consumer' => eidas_url_consumer,
+                                                        'external' => eidas_external,
                                                         'default' => false, 
                                                         'array_campi' => ['spidCode', 'name', 'familyName', 'gender', 'dateOfBirth', 'placeOfBirth', 'address'],
                                                         'testo' => hash_dati_cliente['org_name']

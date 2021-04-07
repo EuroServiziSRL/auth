@@ -214,6 +214,9 @@ class CieController < ApplicationController
         # "cod_ipa_aggregato"=>"", 
         # "p_iva_aggregato"=>"", 
         # "cf_aggregato"=>"", 
+        # "email_aggregato"=>"",
+        # "telefono_aggregato"=>"",
+        # "belfiore_aggregato"=>"",
         # "hash_assertion_consumer"=>{"0"=>{"url_consumer"=>"", "external"=>false, "default"=>true, 
         # "array_campi"=>["dateOfBirth", "fiscalNumber", "name", "familyName"], "testo"=>"Portale del Comune di Chiampo"}}, 
         # "test"=>true, 
@@ -378,6 +381,25 @@ class CieController < ApplicationController
 
         hash_settings['cie'] = hash_dati_cliente['cie']
         hash_settings['cie_pre_prod'] = hash_dati_cliente['cie_pre_prod']
+        #dati per contact persons
+        hash_settings['hash_ente'] = {
+            'organization_name' => hash_dati_cliente['org_name'],
+            'organization_tel' => hash_dati_cliente['telefono_aggregato'],
+            'organization_email' => hash_dati_cliente['email_aggregato'],
+            'ipa_code' => hash_dati_cliente['cod_ipa_aggregato'],
+            'belfiore' => hash_dati_cliente['belfiore_aggregato']
+        }
+        hash_settings['hash_fornitore_servizi'] = {
+            'nome_fornitore' => Settings.hash_aggregatore['piva_aggregatore'],
+            'tel_fornitore' => Settings.hash_aggregatore['telefono_aggregatore'],
+            'email_fornitore' => Settings.hash_aggregatore['email_aggregatore'],
+            'p_iva' => Settings.hash_aggregatore['piva_aggregatore'],
+            'cf' => Settings.hash_aggregatore['cf_aggregatore'],
+            'cod_ateco' => Settings.hash_aggregatore['ateco_aggregatore'],
+            'cod_istat' => Settings.hash_aggregatore['cod_istat_aggregatore'],
+            'prov' => Settings.hash_aggregatore['prov_aggregatore']
+        }
+
         hash_settings
     end
 
@@ -423,6 +445,8 @@ class CieController < ApplicationController
         settings.hash_assertion_consumer.each_pair{ |index,hash_service|
             hash_service['url_consumer'] = settings.assertion_consumer_service_url if hash_service['url_consumer'].blank?
         }
+        settings.hash_ente                          = params_settings['hash_ente']
+        settings.hash_fornitore_servizi             = params_settings['hash_fornitore_servizi']
         settings
     end
 

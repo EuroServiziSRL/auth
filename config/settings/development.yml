@@ -51,9 +51,12 @@ hash_aggregatore:
   soggetto_aggregatore: 'Dedagroup Public Services s.r.l.'
   piva_aggregatore: 'IT01727860221'
   cipa_aggregatore: ""
+  ateco_aggregatore: "62.09.09"
+  cod_istat_aggregatore: "022205"
   cf_aggregatore: '03188950103'
   email_aggregatore: 'dedagroup@legalmail.it'
   telefono_aggregatore: '+390461997111'
+  prov_aggregatore: 'TN'
 id_clienti_tracciati: ['234jh23h']
 attiva_tracciamento_clienti_indicati: true
   
