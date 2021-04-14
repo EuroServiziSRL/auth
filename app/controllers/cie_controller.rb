@@ -359,9 +359,18 @@ class CieController < ApplicationController
             }
 
         else #hash_assertion_consumer di default con indice 0
-            default_hash_assertion_consumer = {   "0" => {  
-                'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer',
-                'external' => false,
+            #controllo inoltre se ho un app esterna
+            if hash_dati_cliente['app_ext']
+                cie_url_consumer = hash_dati_cliente['url_ass_cons_ext']
+                cie_external = true
+            else
+                cie_url_consumer = hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer'
+                cie_external = false
+            end
+
+            default_hash_assertion_consumer = { "0" => {  
+                'url_consumer' => cie_url_consumer,
+                'external' => cie_external,
                 'default' => true, 
                 'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
                 'testo' => hash_dati_cliente['org_name']
