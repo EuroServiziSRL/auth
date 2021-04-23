@@ -587,7 +587,8 @@ class SpidController < ApplicationController
                         spid_external = false
                     end
                     #array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice']
-                    array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
+                    array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice']
+
                     default_hash_assertion_consumer = {   "0" => {  
                         'url_consumer' => spid_url_consumer,
                         'external' => spid_external,
@@ -688,7 +689,7 @@ class SpidController < ApplicationController
         
         portal_url = params_settings['portal_url'] 
         #array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice']
-        array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
+        array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice']
                     
         settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer'][params_settings['assertion_consumer_service_index'].to_s]['url_consumer']
         settings.assertion_consumer_service_url     ||= portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
