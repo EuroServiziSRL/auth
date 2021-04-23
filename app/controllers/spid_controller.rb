@@ -687,7 +687,9 @@ class SpidController < ApplicationController
         settings = Spid::Saml::Settings.new
         
         portal_url = params_settings['portal_url'] 
-    
+        #array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice']
+        array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
+                    
         settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer'][params_settings['assertion_consumer_service_index'].to_s]['url_consumer']
         settings.assertion_consumer_service_url     ||= portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
@@ -704,7 +706,7 @@ class SpidController < ApplicationController
         settings.idp_metadata                       = params_settings['idp_metadata']
         settings.authn_context                      = ["https://www.spid.gov.it/SpidL2"]
         settings.skip_validation                    = params_settings['skip_validation']
-        settings.requested_attribute                = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice']
+        settings.requested_attribute                = array_campi_spid
         settings.metadata_signed                    = true
         settings.organization                       = params_settings['organization']
         settings.assertion_consumer_service_index   = params_settings['assertion_consumer_service_index']
