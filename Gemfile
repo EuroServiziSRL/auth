@@ -54,5 +54,5 @@ gem 'jwt', '= 2.2.1'
 gem 'httparty', '= 0.18.0' 
 gem 'jwe', '= 0.4.0'
 
-gem 'cie-es' #, path: '/home/fabiano/soluzionipa/rails/cie-es'
-gem 'spid-es'#, path: '/home/fabiano/soluzionipa/siti/spid-es'
+gem 'cie-es' #, path: '/home/fabiano/soluzionipa/siti/cie-es'
+gem 'spid-es' #, path: '/home/fabiano/soluzionipa/siti/spid-es'

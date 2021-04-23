@@ -560,61 +560,70 @@ class SpidController < ApplicationController
                                                 "org_display_name" => hash_dati_cliente['org_display_name'], 
                                                 "org_url" => hash_dati_cliente['org_url'] }
         params_per_settings['portal_url'] = hash_dati_cliente['org_url']
-        #se ho clienti con stesso ipa creo hash_assertion_consumer dinamico in base a hash_clienti_stesso_ipa
-        unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
-            default_hash_assertion_consumer = {}
-            hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
-                default_hash_assertion_consumer[(dati_assertion_consumer['index_assertion_consumer']).to_s] = {
-                    'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer']),
-                    'external' => dati_assertion_consumer['external'],
-                    'default' => dati_assertion_consumer['default'], 
-                    'array_campi' => dati_assertion_consumer['campi_richiesti'],
-                    'testo' => dati_assertion_consumer['testo'] 
-                }
-            
-            }
-
-        else #hash_assertion_consumer di default con indice 0
-            if hash_dati_cliente['spid'] || hash_dati_cliente['spid_pre_prod']
-                default_hash_assertion_consumer = {   "0" => {  
-                    'url_consumer' => hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer',
-                    'external' => false,
-                    'default' => true, 
-                    'array_campi' => ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
-                    'testo' => hash_dati_cliente['org_name']
-                } } 
-            else
-                default_hash_assertion_consumer = {}
-            end
-        end
-
-
         
-        #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
-        if hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
-            #controllo inoltre se ho un app esterna
-            if hash_dati_cliente['app_ext']
-                eidas_url_consumer = hash_dati_cliente['url_ass_cons_ext']
-                eidas_external = true
-            else
-                eidas_url_consumer = hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
-                eidas_external = false
-            end
+        cliente_esterno = false
+        if hash_dati_cliente['spid'] || hash_dati_cliente['spid_pre_prod'] || hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
             
-            default_hash_assertion_consumer['99'] = {   'url_consumer' => eidas_url_consumer,
-                                                        'external' => eidas_external,
-                                                        'default' => false, 
-                                                        'array_campi' => ['spidCode', 'name', 'familyName', 'dateOfBirth'],
-                                                        'testo' => hash_dati_cliente['org_name']
-                                                    }
-            default_hash_assertion_consumer['100'] = {  'url_consumer' => eidas_url_consumer,
-                                                        'external' => eidas_external,
-                                                        'default' => false, 
-                                                        'array_campi' => ['spidCode', 'name', 'familyName', 'gender', 'dateOfBirth', 'placeOfBirth', 'address'],
-                                                        'testo' => hash_dati_cliente['org_name']
-                                                    }
+            #se ho clienti con stesso ipa creo hash_assertion_consumer dinamico in base a hash_clienti_stesso_ipa
+            unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
+                default_hash_assertion_consumer = {}
+                hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
+                    cliente_esterno = true if dati_assertion_consumer['external']
+                    default_hash_assertion_consumer[(dati_assertion_consumer['index_assertion_consumer']).to_s] = {
+                        'url_consumer' => dati_assertion_consumer['url_assertion_consumer'],
+                        'external' => dati_assertion_consumer['external'],
+                        'default' => dati_assertion_consumer['default'], 
+                        'array_campi' => dati_assertion_consumer['campi_richiesti'],
+                        'testo' => dati_assertion_consumer['testo'] 
+                    }
+                }
+            else #hash_assertion_consumer di default con indice 0..sono quelli di vecchio tipo non aggregati
+                    #controllo inoltre se ho un app esterna
+                    if hash_dati_cliente['app_ext']
+                        spid_url_consumer = hash_dati_cliente['url_ass_cons_ext']
+                        spid_external = true
+                    else
+                        spid_url_consumer = hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
+                        spid_external = false
+                    end
+                    #array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address','domicileStreetAddress','domicilePostalCode','domicileMunicipality','domicileProvince','domicileNation', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice']
+                    array_campi_spid = ['spidCode', 'name', 'familyName', 'fiscalNumber', 'email', 'gender', 'dateOfBirth', 'placeOfBirth', 'countyOfBirth', 'idCard', 'address', 'digitalAddress', 'expirationDate', 'mobilePhone', 'ivaCode', 'registeredOffice'],
+                    default_hash_assertion_consumer = {   "0" => {  
+                        'url_consumer' => spid_url_consumer,
+                        'external' => spid_external,
+                        'default' => true, 
+                        'array_campi' => array_campi_spid,
+                        'testo' => hash_dati_cliente['org_name']
+                    } } 
+            end
 
+            #Se attivo anche eIDAS devo aggiungere gli assertion consumer per eidas
+            if hash_dati_cliente['eidas'] || hash_dati_cliente['eidas_pre_prod']
+                #controllo inoltre se ho un app esterna
+                if hash_dati_cliente['app_ext']
+                    eidas_url_consumer = hash_dati_cliente['url_ass_cons_ext']
+                    eidas_external = true
+                else
+                    eidas_url_consumer = hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/spid/assertion_consumer'
+                    eidas_external = false
+                end
+                
+                default_hash_assertion_consumer['99'] = {   'url_consumer' => eidas_url_consumer,
+                                                            'external' => eidas_external,
+                                                            'default' => false, 
+                                                            'array_campi' => ['spidCode', 'name', 'familyName', 'dateOfBirth'],
+                                                            'testo' => hash_dati_cliente['org_name']
+                                                        }
+                default_hash_assertion_consumer['100'] = {  'url_consumer' => eidas_url_consumer,
+                                                            'external' => eidas_external,
+                                                            'default' => false, 
+                                                            'array_campi' => ['spidCode', 'name', 'familyName', 'gender', 'dateOfBirth', 'placeOfBirth', 'address'],
+                                                            'testo' => hash_dati_cliente['org_name']
+                                                        }
+
+            end
         end
+
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
             params_per_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
         else
@@ -623,6 +632,10 @@ class SpidController < ApplicationController
             #USO SEMPRE LE CONF SU START, NON INVIO HASH DA PORTALI!
             params_per_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
         end
+
+        #aggiungo url logout
+        params_per_settings['single_logout_destination'] = hash_dati_cliente['url_app_ext']+'/logout' if cliente_esterno
+
         #se chiedo i metadata non passo idp
         unless hash_dati_cliente['idp'].blank?
             #se sto usando spid_validator e sono con pre_prod allora attivo lo spid_validator in locale
@@ -698,12 +711,6 @@ class SpidController < ApplicationController
         settings.attribute_consuming_service_index  = params_settings['attribute_consuming_service_index']
         #ho degli hash identificati dagli indici degli AssertionConsumerService tags nei metadata. Costruisco AssertionConsumerService e AttributeConsumingService
         settings.hash_assertion_consumer            = params_settings['hash_assertion_consumer']
-        #NON DOVREBBE SERVIRE..
-        # #se il campo settings.hash_assertion_consumer[indiceN][url_consumer] è vuoto, uso settings.assertion_consumer_service_url
-        # settings.hash_assertion_consumer.each_pair{ |index,hash_service|
-        #     hash_service['url_consumer'] = settings.assertion_consumer_service_url if hash_service['url_consumer'].blank?
-        # }
-
         settings.aggregato                          = params_settings['aggregato']
         settings.hash_aggregatore                   = params_settings['hash_aggregatore']
         settings

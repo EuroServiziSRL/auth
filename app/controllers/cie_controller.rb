@@ -343,39 +343,47 @@ class CieController < ApplicationController
         
         #se ho clienti con stesso ipa creo hash_assertion_consumer dinamico in base a hash_clienti_stesso_ipa
         cliente_esterno = false
-        unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
-            default_hash_assertion_consumer = {}
-            hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
-                #se integrazione con cliente esterno setto questa variabile
-                cliente_esterno = true if dati_assertion_consumer['external']
-                default_hash_assertion_consumer['0'] = {
-                    'url_consumer' => (dati_assertion_consumer['url_assertion_consumer'].blank? ? hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer' : dati_assertion_consumer['url_assertion_consumer'] ),
-                    'external' => dati_assertion_consumer['external'],
-                    'default' => dati_assertion_consumer['default'], 
-                    'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
-                    'testo' => dati_assertion_consumer['testo'] 
-                }
+        if hash_dati_cliente['cie'] || hash_dati_cliente['cie_pre_prod']
             
-            }
+            unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank?
+                default_hash_assertion_consumer = {}
+                hash_dati_cliente['hash_clienti_stesso_ipa'].each_pair{|client, dati_assertion_consumer|
+                    #se integrazione con cliente esterno setto questa variabile
+                    cliente_esterno = true if dati_assertion_consumer['external']
+                    default_hash_assertion_consumer[(dati_assertion_consumer['index_assertion_consumer']).to_s] = {
+                        'url_consumer' => dati_assertion_consumer['url_assertion_consumer'],
+                        'external' => dati_assertion_consumer['external'],
+                        'default' => dati_assertion_consumer['default'], 
+                        'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
+                        'testo' => dati_assertion_consumer['testo'] 
+                    }
+                
+                }
 
-        else #hash_assertion_consumer di default con indice 0
-            #controllo inoltre se ho un app esterna
-            if hash_dati_cliente['app_ext']
-                cie_url_consumer = hash_dati_cliente['url_ass_cons_ext']
-                cie_external = true
-            else
-                cie_url_consumer = hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer'
-                cie_external = false
+            else #hash_assertion_consumer di default con indice 0 ..sono quelli di vecchio tipo non aggregati
+                #controllo inoltre se ho un app esterna
+                if hash_dati_cliente['app_ext']
+                    cie_url_consumer = hash_dati_cliente['url_ass_cons_ext_cie']
+                    cie_external = true
+                else
+                    cie_url_consumer = hash_dati_cliente['org_url'].gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer'
+                    cie_external = false
+                end
+
+                default_hash_assertion_consumer = { "0" => {  
+                    'url_consumer' => cie_url_consumer,
+                    'external' => cie_external,
+                    'default' => true, 
+                    'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
+                    'testo' => hash_dati_cliente['org_name']
+                } } 
             end
 
-            default_hash_assertion_consumer = { "0" => {  
-                'url_consumer' => cie_url_consumer,
-                'external' => cie_external,
-                'default' => true, 
-                'array_campi' => ['dateOfBirth', 'fiscalNumber', 'name', 'familyName'],
-                'testo' => hash_dati_cliente['org_name']
-            } } 
         end
+        debugger
+        a=3
+
+
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
             hash_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
         else
