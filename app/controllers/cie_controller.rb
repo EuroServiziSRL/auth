@@ -380,10 +380,7 @@ class CieController < ApplicationController
             end
 
         end
-        debugger
-        a=3
-
-
+        
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
             hash_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
         else
