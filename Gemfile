@@ -6,12 +6,12 @@ ruby '2.6.3'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 #gem 'rails', '= 5.2.2'
 
-gem "activesupport", '= 5.2.4.3'
-gem "actionview", '= 5.2.4.3'
-gem "actionpack", '= 5.2.4.3'
-gem "activejob", '= 5.2.4.3'
-gem "actionmailer", '= 5.2.4.3'
-gem "railties", '= 5.2.4.3'
+gem "activesupport", '6.1.3.2'
+gem "actionview", '6.1.3.2'
+gem "actionpack", '6.1.3.2'
+gem "activejob", '6.1.3.2'
+gem "actionmailer", '6.1.3.2'
+gem "railties", '6.1.3.2'
 
 
 gem 'config', '= 2.2.1'
