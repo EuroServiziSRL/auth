@@ -427,7 +427,7 @@ class CieController < ApplicationController
         logger.debug "\n\n PARAMETRI PER SETTINGS #{params_settings.inspect}"
         
         settings = Cie::Saml::Settings.new
-        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer']['0']['url_consumer']
+        settings.assertion_consumer_service_url     = params_settings['hash_assertion_consumer'][params_settings['assertion_consumer_service_index']]['url_consumer']
         settings.assertion_consumer_service_url     ||= portal_url.gsub(/\/portal([\/]*)$/,'')+'/portal/auth/cie/assertion_consumer'
         settings.issuer                             = params_settings['issuer']
         settings.sp_cert                            = params_settings['cert_path']
