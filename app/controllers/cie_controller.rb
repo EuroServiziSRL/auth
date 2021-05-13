@@ -381,8 +381,8 @@ class CieController < ApplicationController
 
         end
         #passo indice che arriva da info dati cliente
-        params_per_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer'] 
-        params_per_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer']
+        hash_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer'] 
+        hash_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer']
 
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
             hash_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
