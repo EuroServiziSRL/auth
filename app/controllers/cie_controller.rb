@@ -380,7 +380,10 @@ class CieController < ApplicationController
             end
 
         end
-        
+        #passo indice che arriva da info dati cliente
+        params_per_settings['assertion_consumer_service_index'] = hash_dati_cliente['index_consumer'] 
+        params_per_settings['attribute_consuming_service_index'] = hash_dati_cliente['index_consumer']
+
         unless hash_dati_cliente['hash_clienti_stesso_ipa'].blank? #configurazioni su start, uso queste
             hash_settings['hash_assertion_consumer'] = default_hash_assertion_consumer
         else
@@ -451,8 +454,8 @@ class CieController < ApplicationController
         settings.requested_attribute                = ['dateOfBirth', 'fiscalNumber', 'name', 'familyName']
         settings.metadata_signed                    = true
         settings.organization                       = params_settings['organization']
-        settings.assertion_consumer_service_index   = 0
-        settings.attribute_consuming_service_index  = 0
+        settings.assertion_consumer_service_index   = params_settings['assertion_consumer_service_index']
+        settings.attribute_consuming_service_index  = params_settings['attribute_consuming_service_index']
         #ho degli hash identificati dagli indici degli AssertionConsumerService tags nei metadata. Costruisco AssertionConsumerService e AttributeConsumingService
         settings.hash_assertion_consumer            = params_settings['hash_assertion_consumer']
         #se il campo settings.hash_assertion_consumer[indiceN][url_consumer] è vuoto, uso settings.assertion_consumer_service_url
