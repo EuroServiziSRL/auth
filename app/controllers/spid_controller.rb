@@ -75,7 +75,8 @@ class SpidController < ApplicationController
                     end
                 else
                     #chiamata da app esterna o dai portali, devo controllare il jwt
-                    hash_dati_cliente = dati_cliente_da_jwt 
+                    Rails.logger.debug "\n\n ** Arriva #{request.headers['Authorization']}"
+		    hash_dati_cliente = dati_cliente_da_jwt 
                     if hash_dati_cliente['esito'] == 'ok'
                         #verificato il jwt, cerco in cache
                         result = Rails.cache.fetch("metadata_cached_#{request_params['client_id']}", expires_in: 1.weeks) do
@@ -499,7 +500,8 @@ class SpidController < ApplicationController
                         hash_dati_cliente['esito'] = 'ok'
                         return hash_dati_cliente
                     else
-                        return { 'esito' => 'ko', 'msg_errore' => "Richiesta in timeout" }
+			#Rails.logger.error "\n\n *** Richiesta con JWT NON VALIDO: #{jwt_token_decoded.inspect}"
+                        return { 'esito' => 'ko', 'msg_errore' => "JWT non valido" }
                     end
                 else
                     return { 'esito' => 'ko', 'msg_errore' => response['msg_errore'] }

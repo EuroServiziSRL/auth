@@ -266,8 +266,9 @@ class CieController < ApplicationController
                             hash_dati_cliente['esito'] = 'ok'
                             return hash_dati_cliente
                         else
-                            return { 'esito' => 'ko', 'msg_errore' => "Richiesta in timeout" }
-                        end
+                            #Rails.logger.error "\n\n *** Richiesta con JWT NON VALIDO: #{jwt_token_decoded.inspect}"
+                            return { 'esito' => 'ko', 'msg_errore' => "JWT non valido" }
+			end
                     else
                         return { 'esito' => 'ko', 'msg_errore' => response['msg_errore'] }
                     end                        
