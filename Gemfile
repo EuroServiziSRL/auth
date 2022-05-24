@@ -15,7 +15,7 @@ gem "railties", '= 5.2.4.3'
 
 
 gem 'config', '= 2.2.1'
-gem 'nokogiri', '= 1.10.9'
+gem 'nokogiri', '1.13.6'
 gem 'addressable', '= 2.4.0'
 
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
