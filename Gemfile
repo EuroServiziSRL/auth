@@ -51,7 +51,7 @@ end
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'zlib', "= 1.0.0"
 gem 'jwt', '= 2.2.1'
-gem 'httparty', '= 0.18.0' 
+gem 'httparty', '0.21.0' 
 gem 'jwe', '= 0.4.0'
 
 gem 'cie-es' #, path: '/home/fabiano/soluzionipa/siti/cie-es'
